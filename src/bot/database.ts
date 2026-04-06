@@ -1,5 +1,5 @@
 import {SupabaseClient} from "@supabase/supabase-js";
-import { Subgroup } from "./api";
+import { Subgroup } from "../lesson/types";
 
 export interface ScheduleSubscription {
     id: number,
@@ -9,7 +9,7 @@ export interface ScheduleSubscription {
     subgroup: Subgroup
 }
 
-export async function getScheduleSubscription(client: SupabaseClient): Promise<ScheduleSubscription[]> {
+export async function getScheduleSubscriptions(client: SupabaseClient): Promise<ScheduleSubscription[]> {
     const {data} = await client.from("schedule_subscriptions").select();
     return data as ScheduleSubscription[]
 }
