@@ -19,14 +19,14 @@ export function pretifySchedule(scheduleDate: Date, lessons: Lesson[], scheduleF
 function pretifyLesson(lesson: Lesson): string {
     let text: string = "";
     
-    const strSubGroup: string | null = getReadableSubGroup(lesson.subGroup)
+    const strSubGroup: string = subgroupToString(lesson.subGroup)
 
     text += `- Время: ${getReadableTime(lesson.time, lesson.customTime)}\n`
     text += `- Предмет: ${lesson.subjectName}\n`
     text += `- Группа: ${lesson.groupName.toUpperCase()}\n`
     text += `- Преподаватели: ${lesson.teacherNames}\n`
     text += `- Кабинет: ${lesson.room}\n`
-    if (strSubGroup !== null) {
+    if (strSubGroup !== "Обе") {
         text += `- Подгруппа: ${strSubGroup}\n`
     }
     text += "──────────────────────\n"
@@ -51,11 +51,19 @@ function getReadableTime(time: TimeSlot, customTime: string | null): string {
     }
 }
 
-function getReadableSubGroup(subGroup: Subgroup): string | null {
+export function subgroupToString(subGroup: Subgroup): string {
     switch (subGroup) {
         case Subgroup.FIRST: return "Первая";
         case Subgroup.SECOND: return "Вторая";
-        case Subgroup.BOTH: return null;
-        default: return null;
+        case Subgroup.BOTH: return "Обе";
+    }
+}
+
+export function stringToSubgroup(subgroup: string): Subgroup | undefined {
+    switch (subgroup) {
+        case "Первая": return Subgroup.FIRST;
+        case "Вторая": return Subgroup.SECOND;
+        case "Обе": return Subgroup.BOTH;
+        default: return undefined;
     }
 }

@@ -1,4 +1,5 @@
 import { Lesson } from "./lesson/types";
+import { dateToString } from "./util/helper";
 
 export class ApiCommunicator {
     private static _instance: ApiCommunicator;
@@ -9,75 +10,92 @@ export class ApiCommunicator {
     }
 
     public static initialise(api_url: string) {
-        this._instance = new this(api_url);
+        const normalizedApiUrl = api_url.endsWith('/') ? api_url.slice(0, -1) : api_url;
+        this._instance = new this(normalizedApiUrl);
     }
 
     public static get Instance() {
         return this._instance;
     }
-    
-    public static async getStudentSchedule(date: Date, group_name: string, subgroup?: number) {
-        const normalizedApiUrl = this.api_url.endsWith('/') ? this.api_url.slice(0, -1) : this.api_url;
 
+    public static async getTeachersList(scheduleDate: Date): Promise<string[]> {
+        const strDate = dateToString(scheduleDate);
+        const url = `${this.api_url}/api/schedule/teachers/${strDate}`;
+
+        return this.getList(url);
+    }
+
+    public static async getGroupsList(scheduleDate: Date): Promise<string[]> {
+        const strDate = dateToString(scheduleDate);
+        const url = `${this.api_url}/api/schedule/groups/${strDate}`;
+
+        return this.getList(url);
+    }
+
+    private static async getList(url: string): Promise<string[]> {
         try{
-            const strDate = date.toISOString().split('T')[0]
-            let url = `${normalizedApiUrl}/api/schedule/student/${strDate}/${group_name}`
-
-            if (subgroup) {
-                url += `?subgroup=${subgroup}`
-            }
-
             const response = await fetch(url,{
                 method:'GET',
                 headers: {
                     "Content-Type": "application/json"
                 }
             })
+
             if (response.status === 404) {
-                console.log(`Для группы [${group_name}] не было найдено расписания!`)
-                return []
+                console.log(`По адресу [${url}] не было найдено списка!`)   
             } else if (!response.ok) {
                 throw new Error("Что-то случилось в процессе запроса!")
             }
+            
             const result = await response.json();
 
-            return result as Lesson[];
+            return result as string[];
         } catch(error){
-            console.error('Error of getting data:', error);
+            console.error('Ошибка получения информации:', error);
             throw error;
         }
     }
+    
+    public static async getStudentSchedule(scheduleDate: Date, group_name: string, subgroup: number): Promise<Lesson[]> {
+        const strDate = dateToString(scheduleDate);
+        const url = `${this.api_url}/api/schedule/student/${strDate}/${group_name}?subgroup=${subgroup}`;
 
-    public static async getTeacherSchedule(date: Date, teacher_name: string) {
-        const normalizedApiUrl = this.api_url.endsWith('/') ? this.api_url.slice(0, -1) : this.api_url;
+        return await this.getSchedule(url);
+    }
 
+    public static async getTeacherSchedule(scheduleDate: Date, teacher_name: string): Promise<Lesson[]> {
+        const strDate = dateToString(scheduleDate);
+        const url = `${this.api_url}/api/schedule/teacher/${strDate}/${teacher_name}`;
+
+        return await this.getSchedule(url);
+    }
+
+    private static async getSchedule(url: string): Promise<Lesson[]> {
         try{
-            const strDate = date.toISOString().split('T')[0]
-            let url = `${normalizedApiUrl}/api/schedule/teacher/${strDate}/${teacher_name}`
-
             const response = await fetch(url,{
                 method:'GET',
                 headers: {
                     "Content-Type": "application/json"
                 }
             })
+
             if (response.status === 404) {
-                throw new Error(`Для преподавателя [${teacher_name}] не было найдено расписания!`)
+                console.log(`По адресу [${url}] не было найдено расписания!`)   
             } else if (!response.ok) {
                 throw new Error("Что-то случилось в процессе запроса!")
             }
-
+            
             const result = await response.json();
 
             return result as Lesson[];
         } catch(error){
-            console.error('Error of getting data:', error);
+            console.error('Ошибка получения информации:', error);
             throw error;
         }
     }
 
     public static async subscribeHook(data: string) {
-        const normalizedApiUrl = this.api_url.endsWith('/') ? this.api_url.slice(0, -1) : this.api_url
+        const normalizedApiUrl = this.api_url.endsWith('/') ? this.api_url.slice(0, -1) : this.api_url;
 
         try{
             await fetch(`${normalizedApiUrl}/api/webhook`,{
@@ -90,7 +108,7 @@ export class ApiCommunicator {
             console.log("Hooked")
         }
         catch(error){
-            throw new Error(`Failed to subscribe webhook: ${error}`)
+            throw new Error(`Failed to subscribe webhook: ${error}`);
         }
     }
 }
