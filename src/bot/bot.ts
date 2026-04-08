@@ -6,7 +6,7 @@ import { ApiCommunicator } from "../api";
 import { pretifySchedule } from "../lesson/helper";
 import { mainKeyboard } from "./keyboards";
 import { ConversationFlavor, conversations, createConversation } from "@grammyjs/conversations";
-import { getStudentSchedule } from "./conversations/functions";
+import { getStudentSchedule, getTeacherSchedule } from "./conversations/functions";
 
 
 export const BotButtons = {
@@ -32,18 +32,19 @@ export class AkttBot {
         this.bot.use(conversations());
 
         this.bot.command("start", async (ctx) => {
-            await ctx.reply("pepeni", {reply_markup: mainKeyboard()});
+            await ctx.reply("Здраствуйте!", {reply_markup: mainKeyboard()});
         })
 
         this.bot.use(createConversation(getStudentSchedule));
+        this.bot.use(createConversation(getTeacherSchedule))
 
-        this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, async (ctx) => {
-            ctx.reply("hui")
-        })
-  
+
         this.bot.hears(BotButtons.STUDENT_SCHEDULE, async (ctx) =>{
             // await ctx.reply('Напишите название группы', {reply_markup: {remove_keyboard: true}})
             await ctx.conversation.enter("getStudentSchedule");
+        })
+        this.bot.hears(BotButtons.TEACHER_SCHEDULE, async (ctx) =>{
+            await ctx.conversation.enter('getTeacherSchedule')
         })
 
         this.bot.start().then(() => {
