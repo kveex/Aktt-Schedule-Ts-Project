@@ -1,15 +1,15 @@
-import { Lesson, Subgroup, TimeSlot } from "./types";
+import { Lesson, Schedule, Subgroup, TimeSlot } from "./types";
 
 const months: string[] = [
             "января", "февраля", "марта", "апреля", "мая", "июня",
             "июля", "августа", "сентября", "октября", "ноября", "декабря"
         ];
 
-export function pretifySchedule(scheduleDate: Date, lessons: Lesson[], scheduleFor: string): string {
-    let text: string = `Расписание на ${scheduleDate.getDate()} ${months[scheduleDate.getMonth()]} ${scheduleDate.getFullYear()} `;
+export function pretifySchedule(schedule: Schedule, scheduleFor: string): string {
+    let text: string = `Расписание на ${schedule.scheduleDate.getDate()} ${months[schedule.scheduleDate.getMonth()]} ${schedule.scheduleDate.getFullYear()} `;
     text += `для ${scheduleFor}:\n\n`;
 
-    for (const lesson of lessons) {
+    for (const lesson of schedule.lessons) {
         text += pretifyLesson(lesson);
     }
     
@@ -26,7 +26,8 @@ function pretifyLesson(lesson: Lesson): string {
     text += `- Группа: ${lesson.groupName.toUpperCase()}\n`
     text += `- Преподаватели: ${lesson.teacherNames}\n`
     text += `- Кабинет: ${lesson.room}\n`
-    if (strSubGroup !== "Обе") {
+    
+    if (lesson.subGroup !== Subgroup.BOTH) {
         text += `- Подгруппа: ${strSubGroup}\n`
     }
     text += "──────────────────────\n"
@@ -56,14 +57,18 @@ export function subgroupToString(subGroup: Subgroup): string {
         case Subgroup.FIRST: return "Первая";
         case Subgroup.SECOND: return "Вторая";
         case Subgroup.BOTH: return "Обе";
+        default: return "";
     }
 }
 
 export function stringToSubgroup(subgroup: string): Subgroup | undefined {
     switch (subgroup) {
         case "Первая": return Subgroup.FIRST;
+        case "FIRST": return Subgroup.FIRST;
         case "Вторая": return Subgroup.SECOND;
+        case "SECOND": return Subgroup.SECOND;
         case "Обе": return Subgroup.BOTH;
+        case "BOTH": return Subgroup.BOTH;
         default: return undefined;
     }
 }

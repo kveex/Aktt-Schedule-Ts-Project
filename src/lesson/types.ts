@@ -33,3 +33,8 @@ export interface Lesson {
     state: string,
     customTime: string | null
 }
+
+export interface Schedule {
+    scheduleDate: Date
+    lessons: Lesson[]
+}
