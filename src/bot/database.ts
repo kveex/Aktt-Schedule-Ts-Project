@@ -12,7 +12,7 @@ export interface ScheduleSubscription {
 
 const Tables = {
     SCHEDULE_SUBSCRIPTION: "schedule_subscriptions",
-    KEYBOARD_SUGESTIONS: "keyboard_sugestions"
+    KEYBOARD_SUGGESTIONS: "keyboard_suggestions"
 } as const;
 
 export interface KeyboardSuggestion {
@@ -76,11 +76,11 @@ export class Database {
     }
     
     public static async addKeyboardSuggestion(chatId: number, type: "group" | "teacher", value: string) {
-        const { count } = await this.client.from('schedule_subscriptions').select('*', { count: 'exact', head: true }).eq('chat_id', chatId);
+        const { count } = await this.client.from(Tables.KEYBOARD_SUGGESTIONS).select('*', { count: 'exact', head: true }).eq('chat_id', chatId);
     
         if (count && count >= 3) {
             const { data: oldest } = await this.client
-                .from(Tables.KEYBOARD_SUGESTIONS)
+                .from(Tables.KEYBOARD_SUGGESTIONS)
                 .select('id')
                 .eq('chat_id', chatId)
                 .order('created_at', { ascending: true })
@@ -89,21 +89,23 @@ export class Database {
     
             if (oldest) {
                 await this.client
-                    .from(Tables.KEYBOARD_SUGESTIONS)
+                    .from(Tables.KEYBOARD_SUGGESTIONS)
                     .delete()
                     .eq('id', oldest.id);
             }
         }
     
-        const { error } = await this.client.from(Tables.KEYBOARD_SUGESTIONS).insert({"chat_id": chatId, "type": type, "value": value});
-    
+        const { error } = await this.client.from(Tables.KEYBOARD_SUGGESTIONS).insert({"chat_id": chatId, "type": type, "value": value});
+        
         if (error) {
-            console.error(error);
+            if (error.code !== '23505') {
+                console.error('Ошибка при добавлении предложения в клавиатуру:', error);
+            }
         }
     }
     
     public static async getKeyboardSuggestions(chatId: number, type: "group" | "teacher"): Promise<KeyboardSuggestion[]> {
-        const { data } = await this.client.from(Tables.KEYBOARD_SUGESTIONS).select().eq("chat_id", chatId).eq("type", type);
+        const { data } = await this.client.from(Tables.KEYBOARD_SUGGESTIONS).select().eq("chat_id", chatId).eq("type", type);
         return data as KeyboardSuggestion[];
     }
     

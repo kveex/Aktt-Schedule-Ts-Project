@@ -24,6 +24,16 @@ export class AkttBot {
             await ctx.reply("Здраствуйте!", {reply_markup: mainKeyboard()});
         })
 
+        // Для отмены диалогов при нажатии кнопки "Отмена" в любом месте бота
+        this.bot.use(async (ctx, next) => {
+            if (ctx.message?.text === BotButtons.CANCEL) {
+                await ctx.reply("Действие отменено.", { reply_markup: mainKeyboard() });
+                await ctx.conversation.exitAll();
+                return;
+            }
+            await next();
+        });
+
         this.bot.use(createConversation(getStudentSchedule));
         this.bot.use(createConversation(getTeacherSchedule))
 
@@ -31,6 +41,7 @@ export class AkttBot {
         this.bot.hears(BotButtons.STUDENT_SCHEDULE, async (ctx) =>{
             await ctx.conversation.enter("getStudentSchedule");
         })
+
         this.bot.hears(BotButtons.TEACHER_SCHEDULE, async (ctx) =>{
             await ctx.conversation.enter('getTeacherSchedule')
         })

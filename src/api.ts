@@ -32,22 +32,24 @@ export class ApiCommunicator {
             })
 
             if (response.status === 404) {
-                console.log(`По адресу [${this.api_url}] не было найдено списка!`)   
+                throw new Error(`По адресу [${this.api_url}] не было найдено расписания!`);
             } else if (!response.ok) {
-                throw new Error("Что-то случилось в процессе запроса!")
+                throw new Error("Что-то случилось в процессе запроса!");
             }
             
             const result = await response.json();
+            
+            this.clearPath();
 
             return result as string[];
         } catch(error){
-            console.error('Ошибка получения информации:', error);
+            this.clearPath();
             throw error;
         }
     }
 
     public static async getSchedule({ type, name, scheduleDate, subgroup }:
-        { type: "student" | "teacher", name: string, scheduleDate?: Date, subgroup?: Subgroup }): Promise<Schedule> {
+        { type: "student" | "teacher", name: string, scheduleDate?: Date | null, subgroup?: Subgroup }): Promise<Schedule> {
         this.api_url.pathname = `/api/schedule/${type}/${name}`;
 
         if (scheduleDate) this.api_url.searchParams.append("date", dateToString(scheduleDate));
@@ -77,6 +79,8 @@ export class ApiCommunicator {
                     subGroup: stringToSubgroup(lesson.subGroup)
                 }))
             }
+            
+            this.clearPath();
 
             return schedule;
         } catch(error){
@@ -96,9 +100,17 @@ export class ApiCommunicator {
                 body: data
             })
             console.log(`Успешно создан вебхук по адресу [${this.api_url}]!`);
+            this.clearPath();
         }
         catch(error){
+            this.clearPath();
             throw new Error(`Не удалось создать вебхук: ${error}`);
         }
+    }
+
+    private static clearPath() {
+        this.api_url.pathname = "";
+        this.api_url.searchParams.delete("date");
+        this.api_url.searchParams.delete("subgroup");
     }
 }

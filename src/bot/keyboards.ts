@@ -48,9 +48,13 @@ export function cancelKeyboard() {
     return Keyboard.from([[Keyboard.text(BotButtons.CANCEL)]]).resized().persistent();
 }
 
-export async function keyboardSuggestionsKeyboard(chatId: number, type: "group" | "teacher") {
-    const buttonRows = (await Database.getKeyboardSuggestions(chatId, type))
+export async function keyboardSuggestionsKeyboard(chatId: number, type: "group" | "teacher"): Promise<Keyboard | null> {
+    const suggestions = await Database.getKeyboardSuggestions(chatId, type);
+
+    if (!suggestions || suggestions.length === 0) return null;
+    
+    const buttonRows = (suggestions)
     .map((suggestion) => [Keyboard.text(suggestion.value)]);
 
-    return Keyboard.from(buttonRows).resized().persistent();
+    return Keyboard.from(buttonRows).row().add(Keyboard.text(BotButtons.CANCEL)).resized().persistent();
 }
