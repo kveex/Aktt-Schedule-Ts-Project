@@ -6,6 +6,7 @@ import { pretifySchedule, stringToSubgroup } from "../../lesson/helper";
 import { parseDate } from "../../util/helper";
 import { BotButtons } from "../constants";
 import { Database } from "../database";
+import { getDateSchedule } from "./helper";
 
 export async function getStudentSchedule(con: Conversation, ctx: Context) {
     await ctx.reply('На какую дату нужно расписание?', { reply_markup: datePickKeyboard() })
@@ -15,21 +16,7 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
     let tomorrow: Date | null = null;
 
     if (pickedDateOption?.text! === BotButtons.CUSTOM_DATE_SCHEDULE) {
-        await ctx.reply('Укажите желаемую дату в формате гггг-мм-дд например "2026-04-08"', { reply_markup: cancelKeyboard() });
-
-        while (!tomorrow) {
-            const { message: customDate } = await con.waitFor("message:text");
-            const input = customDate.text.toLocaleLowerCase();
-
-            try {
-                tomorrow = await con.external(() => { 
-                    const customDate: Date = parseDate(input);
-                    return customDate;
-                })
-            } catch {
-                await ctx.reply("Дата указана не по формату или оказалась нереалистичной, попробуй снова:", { reply_markup: cancelKeyboard() })
-            }
-        }
+        tomorrow =  await getDateSchedule(con, ctx)
     }
     
     let groupsList: string[];
@@ -48,7 +35,7 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
         });
     }
 
-    const suggestionsKeyboard = await keyboardSuggestionsKeyboard(ctx.chatId!, "group");
+    const suggestionsKeyboard = await keyboardSuggestionsKeyboard(ctx.chatId!, "group"); //Раскладка клавиатуры
 
     const promptText = suggestionsKeyboard ? 'Напиши название группы или выбери недавно использованное:' : 'Напиши название группы:';
 
@@ -87,6 +74,19 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
 }
 
 export async function getTeacherSchedule(con: Conversation, ctx: Context) {
+
+
+    await ctx.reply('На какую дату нужно расписание?', { reply_markup: datePickKeyboard() })
+
+    const { message: pickedDateOption } = await con.waitForHears(datePickKeyboardButtons);
+
+    let tomorrow: Date | null = null;
+
+    if (pickedDateOption?.text! === BotButtons.CUSTOM_DATE_SCHEDULE) {
+        tomorrow =  await getDateSchedule(con, ctx)
+    }
+
+
     await ctx.reply('Напиши ФИО преподавателя или выбери недавно использованое:', {reply_markup: {remove_keyboard: true}})
 
     const teachersList: string[] = await con.external(async () => {
@@ -106,4 +106,6 @@ export async function getTeacherSchedule(con: Conversation, ctx: Context) {
             await ctx.reply("Преподаватель не найден. Попробуйте еще раз")
         }
     }
+
+
 }

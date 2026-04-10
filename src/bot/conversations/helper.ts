@@ -3,7 +3,8 @@ import { Subgroup } from "../../lesson/types";
 import { Context } from "grammy";
 import { mainKeyboard } from "../keyboards";
 import { BotButtons } from "../constants";
-
+import { cancelKeyboard } from "../keyboards";
+import { parseDate } from "../../util/helper";
 export async function getList<T>(fetcher: (date: Date) => Promise<T>) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -26,4 +27,24 @@ export async function tryFinishConversation(con: Conversation, ctx: Context, can
         await con.halt();
     }
     return success;
+}
+
+export async function getDateSchedule(con: Conversation, ctx: Context){
+    await ctx.reply('Укажите желаемую дату в формате гггг-мм-дд например "2026-04-08"', { reply_markup: cancelKeyboard() });
+    let tomorrow: Date | null = null;
+    while (!tomorrow) {
+                const { message: customDate } = await con.waitFor("message:text");
+                const input = customDate.text.toLocaleLowerCase();
+    
+            try {
+                tomorrow = await con.external(() => { 
+                const customDate: Date = parseDate(input);
+                return customDate;
+                })
+                return tomorrow
+            } catch {
+                await ctx.reply("Дата указана не по формату или оказалась нереалистичной, попробуй снова:", { reply_markup: cancelKeyboard() })
+            }
+    }
+    return tomorrow
 }
