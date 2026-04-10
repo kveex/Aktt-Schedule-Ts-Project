@@ -9,7 +9,6 @@ import { getStudentSchedule, getTeacherSchedule } from "./conversations/function
 import { BotButtons } from "./constants";
 
 export class AkttBot {
-    private static _instance: AkttBot;
     private static bot: Bot<ConversationFlavor<Context>>;
 
     private constructor(token: string) {
@@ -17,7 +16,7 @@ export class AkttBot {
     }
 
     public static initialize(token: string) {
-        this._instance = new this(token);
+        new this(token);
         this.bot.use(conversations());
 
         this.bot.command("start", async (ctx) => {
@@ -35,7 +34,7 @@ export class AkttBot {
         });
 
         this.bot.use(createConversation(getStudentSchedule));
-        this.bot.use(createConversation(getTeacherSchedule))
+        this.bot.use(createConversation(getTeacherSchedule));
 
 
         this.bot.hears(BotButtons.STUDENT_SCHEDULE, async (ctx) =>{
@@ -43,7 +42,7 @@ export class AkttBot {
         })
 
         this.bot.hears(BotButtons.TEACHER_SCHEDULE, async (ctx) =>{
-            await ctx.conversation.enter('getTeacherSchedule')
+            await ctx.conversation.enter('getTeacherSchedule');
         })
 
         this.bot.start().then(() => {
@@ -52,10 +51,6 @@ export class AkttBot {
         .catch((err) => {
             console.error(`Ошибка при запуске телеграм бота: ${err}`);
         });
-    }
-
-    public static get Instance() {
-        return this._instance;
     }
 
     public static async sendScheduleForSubscribed(scheduleDate: Date) {
@@ -69,17 +64,17 @@ export class AkttBot {
                     scheduleFor += `группы: ${sub.group_name}`;
                     schedule = await ApiCommunicator.getSchedule({ type: "student", name: sub.group_name, scheduleDate: scheduleDate, subgroup: sub.sub_group });
                 } else if (sub.teacher_name !== null) {
-                    scheduleFor += `преподавателя: ${sub.teacher_name}`
+                    scheduleFor += `преподавателя: ${sub.teacher_name}`;
                     schedule = await ApiCommunicator.getSchedule({ type: "teacher", name: sub.teacher_name, scheduleDate: scheduleDate });
                 }
 
-                const text = pretifySchedule(schedule!, scheduleFor)
+                const text = pretifySchedule(schedule!, scheduleFor);
                 await this.bot.api.sendMessage(sub.chat_id, text);
             }
         }
         catch (err) {
             console.error(`Error occurred while fetching subscription data: ${err}`);
-            throw new Error(`can't get subscription data`)
+            throw new Error(`can't get subscription data`);
         }
     }
 }

@@ -1,6 +1,6 @@
 export function parseDate(date: string): Date {
     const [year, month, day]: number[] = date.split('-').map(Number);
-    if (year === undefined || year < 2000) {
+    if (year === undefined || year < 2000 || year > new Date().getUTCFullYear()) {
         throw new Error("Не удалось перевести год из строки в число.")
     }
     if (month === undefined) {

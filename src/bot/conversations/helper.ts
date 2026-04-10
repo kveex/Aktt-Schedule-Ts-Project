@@ -1,50 +1,46 @@
-import { Conversation } from "@grammyjs/conversations";
-import { Subgroup } from "../../lesson/types";
-import { Context } from "grammy";
-import { mainKeyboard } from "../keyboards";
-import { BotButtons } from "../constants";
-import { cancelKeyboard } from "../keyboards";
-import { parseDate } from "../../util/helper";
-export async function getList<T>(fetcher: (date: Date) => Promise<T>) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+import {Conversation} from "@grammyjs/conversations";
+import {Context} from "grammy";
+import {cancelKeyboard} from "../keyboards";
+import {parseDate} from "../../util/helper";
+import {ApiCommunicator} from "../../api";
+import {Subgroup} from "../../lesson/types";
+import {pretifySchedule} from "../../lesson/helper";
 
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
+export async function getListInDialog(type: "groups" | "teachers", date: Date | null):
+    Promise<{ groupsList: string[], error: string | null }> {
+        let groupsList: string[];
+        let error: string | null = null;
 
         try {
-            return await fetcher(tomorrow);
-        } catch (error) {
-            return await fetcher(today)
+            groupsList = !date ? await ApiCommunicator.getList(type) : await ApiCommunicator.getList(type, date);
+        } catch {
+            groupsList = await ApiCommunicator.getList(type);
+            error = "Не удалось найти информацию на указанную дату, попробую получить расписание на ближайшую дату с расписанием";
         }
+
+        return { groupsList, error };
 }
 
-export async function tryFinishConversation(con: Conversation, ctx: Context, cancelingText: string): Promise<boolean> {
-    let success: boolean = false;
-    if (cancelingText === BotButtons.CANCEL.toLocaleLowerCase()) {
-        success = true;
-        await ctx.reply("Запрос расписания отменен.", { reply_markup: mainKeyboard() });
-        await con.halt();
-    }
-    return success;
-}
-
-export async function getDateSchedule(con: Conversation, ctx: Context){
+export async function getDateInDialog(con: Conversation, ctx: Context) {
     await ctx.reply('Укажите желаемую дату в формате гггг-мм-дд например "2026-04-08"', { reply_markup: cancelKeyboard() });
-    let tomorrow: Date | null = null;
-    while (!tomorrow) {
-                const { message: customDate } = await con.waitFor("message:text");
-                const input = customDate.text.toLocaleLowerCase();
-    
-            try {
-                tomorrow = await con.external(() => { 
-                const customDate: Date = parseDate(input);
-                return customDate;
-                })
-                return tomorrow
-            } catch {
-                await ctx.reply("Дата указана не по формату или оказалась нереалистичной, попробуй снова:", { reply_markup: cancelKeyboard() })
-            }
+    while (true) {
+        const { message: customDate } = await con.waitFor("message:text");
+        const input = customDate.text.toLocaleLowerCase();
+        try {
+            return await con.external(() => {
+                return parseDate(input);
+            })
+
+        } catch {
+            await ctx.reply("Дата указана не по формату или оказалась нереалистичной, попробуй снова:", { reply_markup: cancelKeyboard() })
+        }
     }
-    return tomorrow
+}
+
+export async function getScheduleForDialog(con: Conversation, type: "student" | "teacher", name: string, subgroup: Subgroup, date: Date | null, scheduleFor: string): Promise<string> {
+    const schedule = await con.external(async () => {
+        return await ApiCommunicator.getSchedule({ type: type, name: name, subgroup: subgroup, scheduleDate: date });
+    })
+
+    return pretifySchedule(schedule, scheduleFor);
 }

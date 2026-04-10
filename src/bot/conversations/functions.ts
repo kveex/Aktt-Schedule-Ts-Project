@@ -2,11 +2,10 @@ import { Context } from "grammy";
 import { type Conversation } from "@grammyjs/conversations";
 import { cancelKeyboard, datePickKeyboard, datePickKeyboardButtons, keyboardSuggestionsKeyboard, mainKeyboard, subgroupsKeyboard, subgroupsKeyboardLabels } from "../keyboards";
 import { ApiCommunicator } from "../../api";
-import { pretifySchedule, stringToSubgroup } from "../../lesson/helper";
-import { parseDate } from "../../util/helper";
+import { stringToSubgroup } from "../../lesson/helper";
 import { BotButtons } from "../constants";
 import { Database } from "../database";
-import { getDateSchedule } from "./helper";
+import {getDateInDialog, getListInDialog, getScheduleForDialog} from "./helper";
 
 export async function getStudentSchedule(con: Conversation, ctx: Context) {
     await ctx.reply('На какую дату нужно расписание?', { reply_markup: datePickKeyboard() })
@@ -16,29 +15,21 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
     let tomorrow: Date | null = null;
 
     if (pickedDateOption?.text! === BotButtons.CUSTOM_DATE_SCHEDULE) {
-        tomorrow =  await getDateSchedule(con, ctx)
-    }
-    
-    let groupsList: string[];
-    
-    try {
-        groupsList = await con.external(async () => {
-            const list = !tomorrow ? await ApiCommunicator.getList("groups") : await ApiCommunicator.getList("groups", tomorrow);
-            return list;
-        });
-    } catch {
-        await ctx.reply("Не удалось найти информацию на указанную дату, попробую получить расписание на ближайшую дату с расписанием");
-        tomorrow = null;
-        groupsList = await con.external(async () => {            
-            const list = await ApiCommunicator.getList("groups");
-            return list;
-        });
+        tomorrow =  await getDateInDialog(con, ctx)
     }
 
-    const suggestionsKeyboard = await keyboardSuggestionsKeyboard(ctx.chatId!, "group"); //Раскладка клавиатуры
+    const { groupsList, error } = await con.external(async () => {
+        return await getListInDialog("groups", tomorrow);
+    });
+
+    if (error) {
+        await ctx.reply(error);
+        tomorrow = null;
+    }
+
+    const suggestionsKeyboard = await keyboardSuggestionsKeyboard(ctx.chatId!, "group");
 
     const promptText = suggestionsKeyboard ? 'Напиши название группы или выбери недавно использованное:' : 'Напиши название группы:';
-
     await ctx.reply(promptText, { reply_markup: suggestionsKeyboard || cancelKeyboard() });
     
     let groupName: string | null = null;
@@ -46,10 +37,11 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
     while (!groupName) {
         const { message } = await con.waitFor("message:text");
 
-        const input = message.text.toLocaleLowerCase();
-
+        const input = message.text.toLowerCase();
+        
         if (groupsList.includes(input)) {
             groupName = input;
+
             await con.external(async () => {
                 await Database.addKeyboardSuggestion(ctx.chatId!, "group", input);
             });
@@ -64,13 +56,11 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
 
     const subgroup = stringToSubgroup(subgroupMessage?.text!)!;
 
-    const schedule = await con.external(async () => {
-        return await ApiCommunicator.getSchedule({ type: "student", name: groupName, subgroup: subgroup, scheduleDate: tomorrow });
-    })
+    const schedule: string = await getScheduleForDialog(con, "student", groupName, subgroup, tomorrow, `группы ${groupName}`)
 
-    await ctx.reply(pretifySchedule(schedule, `группы ${groupName}`), { reply_markup: mainKeyboard() })
+    await ctx.reply(schedule, { reply_markup: mainKeyboard() })
     
-    return;
+    await con.halt();
 }
 
 export async function getTeacherSchedule(con: Conversation, ctx: Context) {
@@ -83,7 +73,7 @@ export async function getTeacherSchedule(con: Conversation, ctx: Context) {
     let tomorrow: Date | null = null;
 
     if (pickedDateOption?.text! === BotButtons.CUSTOM_DATE_SCHEDULE) {
-        tomorrow =  await getDateSchedule(con, ctx)
+        tomorrow = await getDateInDialog(con, ctx)
     }
 
 

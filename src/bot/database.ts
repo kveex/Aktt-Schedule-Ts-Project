@@ -23,10 +23,7 @@ export interface KeyboardSuggestion {
     created_at: string
 }
 
-//TODO: сделать предложения для быстрого выбора в клавиатуру. Сохранить для каждого пользователя по 3 максимум предложения для групп и преподавателей
-
 export class Database {
-    private static _instance: Database;
     private static client: SupabaseClient;
 
     private constructor(supabase_url: string, supabase_key: string) {
@@ -34,13 +31,10 @@ export class Database {
     }
 
     public static initialize(supabase_url: string, supabase_key: string) {
-        this._instance = new this(supabase_url, supabase_key);
+        new this(supabase_url, supabase_key);
         console.log("Подключение к базе данных успешно!");
     }
 
-    public static get Instance() {
-        return this._instance;
-    }
     public static async getScheduleSubscriptions(): Promise<ScheduleSubscription[]> {
         const { data } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).select();
         return await this.mapSubscription(data!);
