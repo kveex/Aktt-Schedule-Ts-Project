@@ -1,6 +1,6 @@
 import {createClient, SupabaseClient} from "@supabase/supabase-js";
 import { Subgroup } from "../lesson/types";
-import { stringToSubgroup } from "../lesson/helper";
+import {stringToSubgroup, subgroupToString} from "../lesson/helper";
 
 export interface ScheduleSubscription {
     id: number,
@@ -54,15 +54,17 @@ export class Database {
         chatId: number;
         groupName?: string;
         teacherName?: string;
-        subgroup?: Subgroup;
+        subgroup: Subgroup;
     }) {
         const { count } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).select("*", { count: "exact" }).eq("chat_id", chatId);
     
         if (count && count >= 5) {
             throw new Error("У пользователя достигнут лимит подписок!");
         }
+
+        const strSubgroup = subgroupToString(subgroup, "database");
     
-        const { error } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).insert({"chat_id": chatId, "group_name": groupName, "teacher_name": teacherName, "sub_group": subgroup});
+        const { error } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).insert({"chat_id": chatId, "group_name": groupName, "teacher_name": teacherName, "sub_group": strSubgroup});
     
         if (error) {
             console.error(error);

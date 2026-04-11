@@ -19,7 +19,7 @@ export function pretifySchedule(schedule: Schedule, scheduleFor: string): string
 function pretifyLesson(lesson: Lesson): string {
     let text: string = "";
     
-    const strSubGroup: string = subgroupToString(lesson.subGroup)
+    const strSubGroup: string = subgroupToString(lesson.subGroup, "text")
 
     text += `- Время: ${getReadableTime(lesson.time, lesson.customTime)}\n`
     text += `- Предмет: ${lesson.subjectName}\n`
@@ -52,12 +52,23 @@ function getReadableTime(time: TimeSlot, customTime: string | null): string {
     }
 }
 
-export function subgroupToString(subGroup: Subgroup): string {
-    switch (subGroup) {
-        case Subgroup.FIRST: return "Первая";
-        case Subgroup.SECOND: return "Вторая";
-        case Subgroup.BOTH: return "Обе";
-        default: return "";
+export function subgroupToString(subGroup: Subgroup, type: "text" | "database"): string {
+    if (type === "text") {
+        switch (subGroup) {
+            case Subgroup.FIRST: return "Первая";
+            case Subgroup.SECOND: return "Вторая";
+            case Subgroup.BOTH: return "Обе";
+            default: return "";
+        }
+    } else if (type === "database") {
+        switch (subGroup) {
+            case Subgroup.FIRST: return "FIRST";
+            case Subgroup.SECOND: return "SECOND";
+            case Subgroup.BOTH: return "BOTH";
+            default: return "";
+        }
+    } else {
+        return "";
     }
 }
 
