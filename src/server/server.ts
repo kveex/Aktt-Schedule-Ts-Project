@@ -36,6 +36,6 @@ export default async function serverStart(server_url: string) {
 
     app.listen(port, ()=>{
         ApiCommunicator.subscribeHook(`${server_url}${WEBHOOK_PATH}`);
-        console.log('server start');
+        console.log('Сервер запущен на порту', port);
     })
 }
