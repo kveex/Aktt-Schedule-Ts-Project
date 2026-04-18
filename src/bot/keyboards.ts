@@ -18,9 +18,9 @@ export function mainKeyboard() {
 }
 
 export const subgroupsKeyboardLabels = [
-        subgroupToString(Subgroup.FIRST),
-        subgroupToString(Subgroup.SECOND),
-        subgroupToString(Subgroup.BOTH),
+        subgroupToString(Subgroup.FIRST, "text"),
+        subgroupToString(Subgroup.SECOND, "text"),
+        subgroupToString(Subgroup.BOTH, "text"),
         BotButtons.CANCEL
     ];
 
@@ -40,6 +40,21 @@ export const datePickKeyboardButtons = [
 export function datePickKeyboard() {
     const buttonRows = datePickKeyboardButtons
     .map((label) => [Keyboard.text(label)]);
+
+    return Keyboard.from(buttonRows).resized().persistent();
+}
+
+export function subscriptionActionKeyboard(subscriptionCount: number) {
+    const subscriptionActionKeyboardButtons = [];
+
+    if (subscriptionCount <= 5) subscriptionActionKeyboardButtons.push(BotButtons.SUBSCRIBE);
+    if (subscriptionCount >= 1) subscriptionActionKeyboardButtons.push(BotButtons.UNSUBSCRIBE);
+    subscriptionActionKeyboardButtons.push(BotButtons.CANCEL);
+
+    console.log("subscriptionActionKeyboardButtons", subscriptionCount);
+
+    const buttonRows = subscriptionActionKeyboardButtons
+        .map((label) => [Keyboard.text(label)]);
 
     return Keyboard.from(buttonRows).resized().persistent();
 }

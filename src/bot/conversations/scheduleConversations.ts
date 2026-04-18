@@ -1,6 +1,10 @@
 import { Context } from "grammy";
 import { type Conversation } from "@grammyjs/conversations";
-import { mainKeyboard, subgroupsKeyboard, subgroupsKeyboardLabels } from "../keyboards";
+import {
+    mainKeyboard,
+    subgroupsKeyboard,
+    subgroupsKeyboardLabels
+} from "../keyboards";
 import { stringToSubgroup } from "../../lesson/helper";
 import {
     getDateInDialog,

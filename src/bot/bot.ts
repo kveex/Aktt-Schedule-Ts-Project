@@ -2,11 +2,13 @@ import { Bot, Context } from "grammy";
 import { Database, ScheduleSubscription } from "./database";
 import { Schedule } from "../lesson/types";
 import { ApiCommunicator } from "../api";
-import { pretifySchedule } from "../lesson/helper";
-import { mainKeyboard } from "./keyboards";
+import { prettifySchedule } from "../lesson/helper";
+import {mainKeyboard, subscriptionActionKeyboard} from "./keyboards";
 import { ConversationFlavor, conversations, createConversation } from "@grammyjs/conversations";
-import { getStudentSchedule, getTeacherSchedule } from "./conversations/functions";
+import {getStudentSchedule, getTeacherSchedule } from "./conversations/scheduleConversations";
 import { BotButtons } from "./constants";
+import {subscriptionsToString} from "../util/helper";
+import {subscribeToSchedule, unsubscribeFromSchedule} from "./conversations/subscriptionConversations";
 
 export class AkttBot {
     private static bot: Bot<ConversationFlavor<Context>>;
@@ -35,14 +37,29 @@ export class AkttBot {
 
         this.bot.use(createConversation(getStudentSchedule));
         this.bot.use(createConversation(getTeacherSchedule));
-
+        this.bot.use(createConversation(subscribeToSchedule));
+        this.bot.use(createConversation(unsubscribeFromSchedule));
 
         this.bot.hears(BotButtons.STUDENT_SCHEDULE, async (ctx) =>{
             await ctx.conversation.enter("getStudentSchedule");
-        })
+        });
 
         this.bot.hears(BotButtons.TEACHER_SCHEDULE, async (ctx) =>{
             await ctx.conversation.enter('getTeacherSchedule');
+        });
+
+        this.bot.hears(BotButtons.SUBSCRIBE, async (ctx) =>{
+            await ctx.conversation.enter('subscribeToSchedule');
+        })
+
+        this.bot.hears(BotButtons.UNSUBSCRIBE, async (ctx) =>{
+            await ctx.conversation.enter('unsubscribeFromSchedule');
+        })
+
+        this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, async (ctx) =>{
+            const { subscriptions, count } = await Database.getUserSubscriptions(ctx.chatId);
+            const text: string = subscriptionsToString(subscriptions);
+            await ctx.reply(text, { reply_markup: subscriptionActionKeyboard(count) });
         })
 
         this.bot.start().then(() => {
@@ -68,7 +85,7 @@ export class AkttBot {
                     schedule = await ApiCommunicator.getSchedule({ type: "teacher", name: sub.teacher_name, scheduleDate: scheduleDate });
                 }
 
-                const text = pretifySchedule(schedule!, scheduleFor);
+                const text = prettifySchedule(schedule!, scheduleFor);
                 await this.bot.api.sendMessage(sub.chat_id, text);
             }
         }

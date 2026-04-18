@@ -1,10 +1,16 @@
 import { Conversation } from "@grammyjs/conversations";
 import { Context } from "grammy";
-import {cancelKeyboard, datePickKeyboard, datePickKeyboardButtons, keyboardSuggestionsKeyboard} from "../keyboards";
+import {
+    cancelKeyboard,
+    datePickKeyboard,
+    datePickKeyboardButtons,
+    keyboardSuggestionsKeyboard,
+    subgroupsKeyboard, subgroupsKeyboardLabels
+} from "../keyboards";
 import { parseDate } from "../../util/helper";
 import { ApiCommunicator } from "../../api";
 import { Subgroup } from "../../lesson/types";
-import { pretifySchedule } from "../../lesson/helper";
+import {prettifySchedule, stringToSubgroup} from "../../lesson/helper";
 import { Database } from "../database";
 import {BotButtons} from "../constants";
 
@@ -21,6 +27,29 @@ export async function getListInDialog(type: "groups" | "teachers", date: Date | 
         }
 
         return { list, error };
+}
+
+async function getListsInDialog(date: Date | null):
+    Promise<{ groupsList: string[], teachersList: string[], error: string | null }> {
+    let groupsList: string[];
+    let teachersList: string[];
+    let error: string | null = null;
+
+    try {
+        if (!date) {
+            groupsList = await ApiCommunicator.getList("groups");
+            teachersList = await ApiCommunicator.getList("teachers");
+        } else {
+            groupsList = await ApiCommunicator.getList("groups", date);
+            teachersList = await ApiCommunicator.getList("teachers", date);
+        }
+    } catch {
+        groupsList = await ApiCommunicator.getList("groups");
+        teachersList = await ApiCommunicator.getList("teachers");
+        error = "Не удалось найти информацию на указанную дату, попробую получить расписание на ближайшую дату с расписанием";
+    }
+
+    return { groupsList, teachersList, error };
 }
 
 export async function getDateInDialog(con: Conversation, ctx: Context): Promise<Date | null> {
@@ -60,7 +89,7 @@ export async function getScheduleForDialog(
         return await ApiCommunicator.getSchedule({ type: type, name: name, subgroup: subgroup, scheduleDate: date });
     })
 
-    return pretifySchedule(schedule, scheduleFor);
+    return prettifySchedule(schedule, scheduleFor);
 }
 
 export async function getNameInDialog(
@@ -84,7 +113,35 @@ export async function getNameInDialog(
     }
 }
 
-export async function setSuggestionsKeyboardInDialog(ctx: Context, suggestionType: "group" | "teacher") {
+export async function getNameInDialogNew(
+    ctx: Context, con: Conversation, date: Date | null): Promise<{ name: string, type: "group" | "teacher" }> {
+    const { groupsList, teachersList } = await con.external(async () => {
+        return await getListsInDialog(date);
+    })
+
+    while (true) {
+        const { message } = await con.waitFor("message:text");
+        const input = message.text;
+
+        if (groupsList.includes(input.toLowerCase())) {
+            await con.external(async () => {
+                await Database.addKeyboardSuggestion(ctx.chatId!, "group", input);
+            });
+            return { name: input, type: "group" };
+        } else if (teachersList.includes(input)) {
+            await con.external(async () => {
+                await Database.addKeyboardSuggestion(ctx.chatId!, "teacher", input);
+            })
+            return { name: input, type: "teacher" };
+        } else {
+            await ctx.reply("Указанные группа или преподаватель не найдены! Попробуйте ещё раз:",
+                { reply_markup: cancelKeyboard() }
+            );
+        }
+    }
+}
+
+export async function setSuggestionsKeyboardInDialog(ctx: Context, suggestionType: "group" | "teacher", text?: string) {
     const suggestionsKeyboard = await keyboardSuggestionsKeyboard(ctx.chatId!, suggestionType);
 
     let promptText: string;
@@ -95,5 +152,17 @@ export async function setSuggestionsKeyboardInDialog(ctx: Context, suggestionTyp
         promptText = suggestionsKeyboard ? 'Напиши имя и инициалы преподавателя в формате  или выбери недавно использованное:' : 'Напиши имя и инициалы преподавателя:';
     }
 
+    if (text) {
+        promptText = text;
+    }
+
     await ctx.reply(promptText, { reply_markup: suggestionsKeyboard || cancelKeyboard() });
+}
+
+export async function getSubgroupInDialog(ctx: Context, con:Conversation): Promise<Subgroup> {
+    await ctx.reply("Выбери подгруппу, для которой нужно расписание:", { reply_markup: subgroupsKeyboard() });
+
+    const { message: subgroupMessage } = await con.waitForHears(subgroupsKeyboardLabels);
+
+    return stringToSubgroup(subgroupMessage?.text!)!;
 }

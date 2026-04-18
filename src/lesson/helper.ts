@@ -5,18 +5,18 @@ const months: string[] = [
             "июля", "августа", "сентября", "октября", "ноября", "декабря"
         ];
 
-export function pretifySchedule(schedule: Schedule, scheduleFor: string): string {
+export function prettifySchedule(schedule: Schedule, scheduleFor: string): string {
     let text: string = `Расписание на ${schedule.scheduleDate.getDate()} ${months[schedule.scheduleDate.getMonth()]} ${schedule.scheduleDate.getFullYear()} `;
     text += `для ${scheduleFor}:\n\n`;
 
     for (const lesson of schedule.lessons) {
-        text += pretifyLesson(lesson);
+        text += prettifyLesson(lesson);
     }
     
     return text;
 }
 
-function pretifyLesson(lesson: Lesson): string {
+function prettifyLesson(lesson: Lesson): string {
     let text: string = "";
     
     const strSubGroup: string = subgroupToString(lesson.subGroup, "text")
@@ -58,14 +58,12 @@ export function subgroupToString(subGroup: Subgroup, type: "text" | "database"):
             case Subgroup.FIRST: return "Первая";
             case Subgroup.SECOND: return "Вторая";
             case Subgroup.BOTH: return "Обе";
-            default: return "";
         }
     } else if (type === "database") {
         switch (subGroup) {
             case Subgroup.FIRST: return "FIRST";
             case Subgroup.SECOND: return "SECOND";
             case Subgroup.BOTH: return "BOTH";
-            default: return "";
         }
     } else {
         return "";

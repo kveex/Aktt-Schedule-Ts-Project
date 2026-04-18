@@ -25,6 +25,7 @@ export interface KeyboardSuggestion {
 
 export class Database {
     private static client: SupabaseClient;
+    private static readonly MAX_SUBSCRIPTIONS_PER_USER = 5;
 
     private constructor(supabase_url: string, supabase_key: string) {
         Database.client = createClient(supabase_url, supabase_key);
@@ -40,37 +41,57 @@ export class Database {
         return await this.mapSubscription(data!);
     }
     
-    public static async getUserSubscriptions(chatId: number): Promise<ScheduleSubscription[]> {
-        const {data} = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).select().eq("chat_id", chatId);
-        return await this.mapSubscription(data!);
+    public static async getUserSubscriptions(chatId: number): Promise<{ subscriptions: ScheduleSubscription[], count: number }> {
+        const { data, count: subsCount, error } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).select("*", { count: "exact" }).eq("chat_id", chatId);
+
+        if (data === null) {
+            throw new Error(`Не удалось получить список подписок пользователя! Причина: ${error}`);
+        }
+
+        const subs = await this.mapSubscription(data!);
+        return { subscriptions: subs, count: subsCount! };
     }
     
     public static async removeUserSubscription(subscriptionId: number) {
         const response = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).delete().eq("id", subscriptionId);
-        console.info(`Удалена подписка, содержимое response: ${response}`);
+        console.info(`Удалена подписка, содержимое response: ${response.data}`);
     }
     
-    public static async createUserSubscription({chatId, groupName, teacherName, subgroup}: {
-        chatId: number;
-        groupName?: string;
-        teacherName?: string;
-        subgroup: Subgroup;
-    }) {
-        const { count } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).select("*", { count: "exact" }).eq("chat_id", chatId);
-    
-        if (count && count >= 5) {
-            throw new Error("У пользователя достигнут лимит подписок!");
+    public static async createUserSubscription(chatId: number, groupName: string | null, teacherName: string | null, subgroup: Subgroup) {
+        const strSubgroup = subgroupToString(subgroup, "database");
+
+        const { data: subscriptions, error: subscriptionsError } = await this.client
+            .from(Tables.SCHEDULE_SUBSCRIPTION)
+            .select("id, group_name, teacher_name, sub_group")
+            .eq("chat_id", chatId);
+
+        if (subscriptionsError) {
+            throw new Error(`Не удалось проверить подписки: ${subscriptionsError.message}`);
         }
 
-        const strSubgroup = subgroupToString(subgroup, "database");
-    
-        const { error } = await this.client.from(Tables.SCHEDULE_SUBSCRIPTION).insert({"chat_id": chatId, "group_name": groupName, "teacher_name": teacherName, "sub_group": strSubgroup});
-    
+        if (subscriptions.length >= this.MAX_SUBSCRIPTIONS_PER_USER) {
+            throw new Error("У вас достигнут лимит подписок! Отпишитесь от неважных расписаний");
+        }
+
+        const hasDuplicate = subscriptions.some((subscription) =>
+            subscription.group_name === groupName &&
+            subscription.teacher_name === teacherName &&
+            subscription.sub_group === strSubgroup
+        );
+
+        if (hasDuplicate) {
+            throw new Error("Такая подписка уже есть! Сделайте другую подписку");
+        }
+
+        const { error } = await this.client
+            .from(Tables.SCHEDULE_SUBSCRIPTION)
+            .insert({ "chat_id": chatId, "group_name": groupName, "teacher_name": teacherName, "sub_group": strSubgroup });
+
         if (error) {
-            console.error(error);
+            throw new Error(`Не удалось создать подписку: ${error.message}`);
         }
     }
-    
+
     public static async addKeyboardSuggestion(chatId: number, type: "group" | "teacher", value: string) {
         const { count } = await this.client.from(Tables.KEYBOARD_SUGGESTIONS).select('*', { count: 'exact', head: true }).eq('chat_id', chatId);
     
@@ -112,4 +133,5 @@ export class Database {
         }));
     }
 }
+
 
