@@ -70,7 +70,7 @@ export class AkttBot {
         });
     }
 
-    public static async sendScheduleForSubscribed(scheduleDate: Date) {
+    public static async sendScheduleForSubscribed() {
         try {
             const data: ScheduleSubscription[] = await Database.getScheduleSubscriptions();
             for (const sub of data) {
@@ -78,11 +78,11 @@ export class AkttBot {
                 let scheduleFor: string = "";
 
                 if (sub.group_name !== null) {
-                    scheduleFor += `группы: ${sub.group_name}`;
-                    schedule = await ApiCommunicator.getSchedule({ type: "student", name: sub.group_name, scheduleDate: scheduleDate, subgroup: sub.sub_group });
+                    scheduleFor += `группы: ${sub.group_name.toLocaleUpperCase()}`;
+                    schedule = await ApiCommunicator.getSchedule({ type: "student", name: sub.group_name, subgroup: sub.sub_group });
                 } else if (sub.teacher_name !== null) {
                     scheduleFor += `преподавателя: ${sub.teacher_name}`;
-                    schedule = await ApiCommunicator.getSchedule({ type: "teacher", name: sub.teacher_name, scheduleDate: scheduleDate });
+                    schedule = await ApiCommunicator.getSchedule({ type: "teacher", name: sub.teacher_name });
                 }
 
                 const text = prettifySchedule(schedule!, scheduleFor);

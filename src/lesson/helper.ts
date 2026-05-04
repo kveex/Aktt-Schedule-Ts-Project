@@ -20,11 +20,12 @@ function prettifyLesson(lesson: Lesson): string {
     let text: string = "";
     
     const strSubGroup: string = subgroupToString(lesson.subGroup, "text")
+    let teachers: string = lesson.teacherNames.join(", ");
 
     text += `- Время: ${getReadableTime(lesson.time, lesson.customTime)}\n`
-    text += `- Предмет: ${lesson.subjectName}\n`
+    if (lesson.state != "PRACTICE") text += `- Предмет: ${lesson.subjectName}\n`
     text += `- Группа: ${lesson.groupName.toUpperCase()}\n`
-    text += `- Преподаватели: ${lesson.teacherNames}\n`
+    if (lesson.teacherNames.length > 0) text += `- Преподаватели: ${teachers}\n`
     text += `- Кабинет: ${lesson.room}\n`
     
     if (lesson.subGroup !== Subgroup.BOTH) {
@@ -48,6 +49,7 @@ function getReadableTime(time: TimeSlot, customTime: string | null): string {
         case TimeSlot.FOURTH_SHORT: return "12:00 - 13:10";
         case TimeSlot.LEARNING_PRACTICE: return "Учебная практика";
         case TimeSlot.PRODUCTION_PRACTICE: return "Производственная практика";
+        case TimeSlot.PRE_DIPLOMA_PRACTICE: return "Пред дипломная практика";
         case TimeSlot.CUSTOM: return customTime!;
     }
 }

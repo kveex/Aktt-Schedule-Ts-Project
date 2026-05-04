@@ -22,13 +22,10 @@ export default async function serverStart(server_url: string) {
 
         webhookInFlight = true;
         res.send('RECEIVED');
-        console.log('Headers:', req.headers);
-        console.log('Body type:', typeof req.body);
-        console.log('Body:', req.body);
 
         try {
             const date: Date = parseDate(req.body)
-            await AkttBot.sendScheduleForSubscribed(date);
+            await AkttBot.sendScheduleForSubscribed();
         } finally {
             webhookInFlight = false;
         }

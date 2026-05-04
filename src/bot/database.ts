@@ -95,7 +95,7 @@ export class Database {
     public static async addKeyboardSuggestion(chatId: number, type: "group" | "teacher", value: string) {
         const { count } = await this.client.from(Tables.KEYBOARD_SUGGESTIONS).select('*', { count: 'exact', head: true }).eq('chat_id', chatId);
     
-        if (count && count >= 3) {
+        if (count && count > 3) {
             const { data: oldest } = await this.client
                 .from(Tables.KEYBOARD_SUGGESTIONS)
                 .select('id')

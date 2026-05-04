@@ -14,21 +14,6 @@ import {prettifySchedule, stringToSubgroup} from "../../lesson/helper";
 import { Database } from "../database";
 import {BotButtons} from "../constants";
 
-export async function getListInDialog(type: "groups" | "teachers", date: Date | null):
-    Promise<{ list: string[], error: string | null }> {
-        let list: string[];
-        let error: string | null = null;
-
-        try {
-            list = !date ? await ApiCommunicator.getList(type) : await ApiCommunicator.getList(type, date);
-        } catch {
-            list = await ApiCommunicator.getList(type);
-            error = "Не удалось найти информацию на указанную дату, попробую получить расписание на ближайшую дату с расписанием";
-        }
-
-        return { list, error };
-}
-
 async function getListsInDialog(date: Date | null):
     Promise<{ groupsList: string[], teachersList: string[], error: string | null }> {
     let groupsList: string[];
@@ -93,27 +78,6 @@ export async function getScheduleForDialog(
 }
 
 export async function getNameInDialog(
-    ctx: Context, con: Conversation, list: string[], suggestionType: "group" | "teacher"): Promise<string> {
-    while (true) {
-        const { message } = await con.waitFor("message:text");
-
-        const input = suggestionType === "group" ? message.text.toLowerCase() : message.text;
-        const errorText: string = suggestionType === "group" ?
-            "Указанная группа не найдена. Попробуйте ещё раз:" :
-            "Указанный преподаватель не найден. Попробуйте ещё раз:";
-
-        if (list.includes(input)) {
-            await con.external(async () => {
-                await Database.addKeyboardSuggestion(ctx.chatId!, suggestionType, input);
-            });
-            return input;
-        } else {
-            await ctx.reply(errorText, { reply_markup: cancelKeyboard() });
-        }
-    }
-}
-
-export async function getNameInDialogNew(
     ctx: Context, con: Conversation, date: Date | null): Promise<{ name: string, type: "group" | "teacher" }> {
     const { groupsList, teachersList } = await con.external(async () => {
         return await getListsInDialog(date);
@@ -122,17 +86,20 @@ export async function getNameInDialogNew(
     while (true) {
         const { message } = await con.waitFor("message:text");
         const input = message.text;
+        
+        const matchedGroup = groupsList.find(groupName => groupName.includes(input.toLocaleLowerCase()));
+        const matchedTeacher = teachersList.find(teacherName => teacherName.includes(input));
 
-        if (groupsList.includes(input.toLowerCase())) {
+        if (matchedGroup) {
             await con.external(async () => {
-                await Database.addKeyboardSuggestion(ctx.chatId!, "group", input);
+                await Database.addKeyboardSuggestion(ctx.chatId!, "group", matchedGroup.toLocaleUpperCase());
             });
-            return { name: input, type: "group" };
-        } else if (teachersList.includes(input)) {
+            return { name: matchedGroup, type: "group" };
+        } else if (matchedTeacher) {
             await con.external(async () => {
-                await Database.addKeyboardSuggestion(ctx.chatId!, "teacher", input);
-            })
-            return { name: input, type: "teacher" };
+                await Database.addKeyboardSuggestion(ctx.chatId!, "teacher", matchedTeacher);
+            });
+            return { name: matchedTeacher, type: "teacher" };
         } else {
             await ctx.reply("Указанные группа или преподаватель не найдены! Попробуйте ещё раз:",
                 { reply_markup: cancelKeyboard() }
@@ -149,7 +116,7 @@ export async function setSuggestionsKeyboardInDialog(ctx: Context, suggestionTyp
     if (suggestionType === "group") {
         promptText = suggestionsKeyboard ? 'Напиши название группы или выбери недавно использованное:' : 'Напиши название группы:';
     } else {
-        promptText = suggestionsKeyboard ? 'Напиши имя и инициалы преподавателя в формате  или выбери недавно использованное:' : 'Напиши имя и инициалы преподавателя:';
+        promptText = suggestionsKeyboard ? 'Напиши фамилию и инициалы преподавателя или выбери недавно использованное:' : 'Напиши фамилию и инициалы преподавателя:';
     }
 
     if (text) {

@@ -1,7 +1,7 @@
 import type {Conversation} from "@grammyjs/conversations";
 import {Context, Keyboard} from "grammy";
 import {Subgroup} from "../../lesson/types";
-import {getNameInDialogNew, getSubgroupInDialog, setSuggestionsKeyboardInDialog} from "./helper";
+import {getNameInDialog, getSubgroupInDialog, setSuggestionsKeyboardInDialog} from "./helper";
 import {Database} from "../database";
 import {mainKeyboard} from "../keyboards";
 import {BotButtons} from "../constants";
@@ -11,10 +11,10 @@ export async function subscribeToSchedule(con: Conversation, ctx: Context) {
     await setSuggestionsKeyboardInDialog(
         ctx,
         "group",
-        "Введите название группы или имя и инициалы преподавателя [23-14ИС|Фамилия И.О.]:"
+        "Введите название группы или фамилию и инициалы преподавателя [23-14ИС|Фамилия И.О.]:"
     );
 
-    const { name, type } = await getNameInDialogNew(ctx, con, null);
+    const { name, type } = await getNameInDialog(ctx, con, null);
 
     if (type === "group") {
         subgroup = await getSubgroupInDialog(ctx, con);

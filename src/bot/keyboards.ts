@@ -51,8 +51,6 @@ export function subscriptionActionKeyboard(subscriptionCount: number) {
     if (subscriptionCount >= 1) subscriptionActionKeyboardButtons.push(BotButtons.UNSUBSCRIBE);
     subscriptionActionKeyboardButtons.push(BotButtons.CANCEL);
 
-    console.log("subscriptionActionKeyboardButtons", subscriptionCount);
-
     const buttonRows = subscriptionActionKeyboardButtons
         .map((label) => [Keyboard.text(label)]);
 
