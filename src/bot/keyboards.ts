@@ -45,10 +45,12 @@ export function datePickKeyboard() {
 }
 
 export function subscriptionActionKeyboard(subscriptionCount: number) {
-    const subscriptionActionKeyboardButtons = [];
+    const minSubscriptionsAmount: number = 1;
+    const maxSubscriptionsAmount: number = 5;
 
-    if (subscriptionCount <= 5) subscriptionActionKeyboardButtons.push(BotButtons.SUBSCRIBE);
-    if (subscriptionCount >= 1) subscriptionActionKeyboardButtons.push(BotButtons.UNSUBSCRIBE);
+    const subscriptionActionKeyboardButtons = [];
+    if (subscriptionCount <= maxSubscriptionsAmount) subscriptionActionKeyboardButtons.push(BotButtons.SUBSCRIBE);
+    if (subscriptionCount >= minSubscriptionsAmount) subscriptionActionKeyboardButtons.push(BotButtons.UNSUBSCRIBE);
     subscriptionActionKeyboardButtons.push(BotButtons.CANCEL);
 
     const buttonRows = subscriptionActionKeyboardButtons

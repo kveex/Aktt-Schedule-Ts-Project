@@ -3,6 +3,12 @@ import cors from 'cors'
 import { parseDate } from '../util/helper';
 import { ApiCommunicator } from '../api';
 import { AkttBot } from '../bot/bot';
+import {Schedule} from "../lesson/types";
+import {prettifySchedule} from "../lesson/helper";
+import {ScheduleSubscription} from "../bot/database/types";
+import {getScheduleSubscriptions} from "../bot/database/schedule_subscriptions";
+import {AkttBotContext} from "../bot/constants";
+import {Bot} from "grammy";
 
 const WEBHOOK_PATH = '/api/webhook';
 

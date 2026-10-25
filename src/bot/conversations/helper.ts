@@ -11,7 +11,6 @@ import { parseDate } from "../../util/helper";
 import { ApiCommunicator } from "../../api";
 import { Subgroup } from "../../lesson/types";
 import {prettifySchedule, stringToSubgroup} from "../../lesson/helper";
-import { Database } from "../database";
 import {BotButtons} from "../constants";
 
 async function getListsInDialog(date: Date | null):

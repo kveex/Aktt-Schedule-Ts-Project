@@ -1,5 +1,3 @@
-import { Context } from "grammy";
-import { type Conversation } from "@grammyjs/conversations";
 import {
     mainKeyboard,
 } from "../keyboards";
@@ -11,8 +9,9 @@ import {
     setSuggestionsKeyboardInDialog
 } from "./helper";
 import {Subgroup} from "../../lesson/types";
+import {AkttBotContext, AkttBotConversation} from "../constants";
 
-export async function getStudentSchedule(con: Conversation, ctx: Context) {
+export async function getStudentSchedule(con: AkttBotConversation, ctx: AkttBotContext) {
     let tomorrow = await getDateInDialog(con, ctx);
 
     await setSuggestionsKeyboardInDialog(ctx, "group");
@@ -28,7 +27,7 @@ export async function getStudentSchedule(con: Conversation, ctx: Context) {
     await con.halt();
 }
 
-export async function getTeacherSchedule(con: Conversation, ctx: Context) {
+export async function getTeacherSchedule(con: AkttBotConversation, ctx: AkttBotContext) {
     let tomorrow = await getDateInDialog(con, ctx);
 
     await setSuggestionsKeyboardInDialog(ctx, "teacher");

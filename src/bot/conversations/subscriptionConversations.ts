@@ -1,10 +1,10 @@
 import type {Conversation} from "@grammyjs/conversations";
-import {Context, Keyboard} from "grammy";
+import {Context, HearsContext, Keyboard} from "grammy";
 import {Subgroup} from "../../lesson/types";
 import {getNameInDialog, getSubgroupInDialog, setSuggestionsKeyboardInDialog} from "./helper";
 import {Database} from "../database";
 import {mainKeyboard} from "../keyboards";
-import {BotButtons} from "../constants";
+import {AkttBotContext, BotButtons, BotConversations} from "../constants";
 
 export async function subscribeToSchedule(con: Conversation, ctx: Context) {
     let subgroup: Subgroup = Subgroup.BOTH;

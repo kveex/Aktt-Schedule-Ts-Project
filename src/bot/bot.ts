@@ -1,66 +1,56 @@
-import { Bot, Context } from "grammy";
-import { Database, ScheduleSubscription } from "./database";
+import { Bot } from "grammy";
 import { Schedule } from "../lesson/types";
 import { ApiCommunicator } from "../api";
 import { prettifySchedule } from "../lesson/helper";
-import {mainKeyboard, subscriptionActionKeyboard} from "./keyboards";
-import { ConversationFlavor, conversations, createConversation } from "@grammyjs/conversations";
-import {getStudentSchedule, getTeacherSchedule } from "./conversations/scheduleConversations";
-import { BotButtons } from "./constants";
-import {subscriptionsToString} from "../util/helper";
-import {subscribeToSchedule, unsubscribeFromSchedule} from "./conversations/subscriptionConversations";
+import {conversations, createConversation} from "@grammyjs/conversations";
+import {
+    getStudentSchedule,
+    getTeacherSchedule
+} from "./conversations/scheduleConversations";
+import {AkttBotContext, BotButtons, BotCommands} from "./constants";
+import {
+    subscribeToSchedule,
+    unsubscribeFromSchedule
+} from "./conversations/subscriptionConversations";
+import {handleStart} from "./handlers/start";
+import {handleCancelConversation} from "./handlers/cancelConversation";
+import {
+    enterGetStudentScheduleConversation,
+    enterGetTeacherScheduleConversation,
+    enterSubscribeToScheduleConversation,
+    enterUnsubscribeFromScheduleConversation
+} from "./handlers/enterConversation";
+import {handleSubscriptionManagement} from "./handlers/subscriptionManagment";
+import {ScheduleSubscription} from "./database/types";
 
 export class AkttBot {
-    private static bot: Bot<ConversationFlavor<Context>>;
+    private static bot: Bot<AkttBotContext>;
 
     private constructor(token: string) {
-        AkttBot.bot = new Bot<ConversationFlavor<Context>>(token);
+        AkttBot.bot = new Bot<AkttBotContext>(token);
     }
 
     public static initialize(token: string) {
         new this(token);
         this.bot.use(conversations());
 
-        this.bot.command("start", async (ctx) => {
-            await ctx.reply("Здраствуйте!", {reply_markup: mainKeyboard()});
-        })
-
-        // Для отмены диалогов при нажатии кнопки "Отмена" в любом месте бота
-        this.bot.use(async (ctx, next) => {
-            if (ctx.message?.text === BotButtons.CANCEL) {
-                await ctx.reply("Действие отменено.", { reply_markup: mainKeyboard() });
-                await ctx.conversation.exitAll();
-                return;
-            }
-            await next();
-        });
+        this.bot.command(BotCommands.START, handleStart)
+        this.bot.use(handleCancelConversation);
 
         this.bot.use(createConversation(getStudentSchedule));
         this.bot.use(createConversation(getTeacherSchedule));
         this.bot.use(createConversation(subscribeToSchedule));
         this.bot.use(createConversation(unsubscribeFromSchedule));
 
-        this.bot.hears(BotButtons.STUDENT_SCHEDULE, async (ctx) =>{
-            await ctx.conversation.enter("getStudentSchedule");
-        });
+        this.bot.hears(BotButtons.STUDENT_SCHEDULE, enterGetStudentScheduleConversation);
 
-        this.bot.hears(BotButtons.TEACHER_SCHEDULE, async (ctx) =>{
-            await ctx.conversation.enter('getTeacherSchedule');
-        });
+        this.bot.hears(BotButtons.TEACHER_SCHEDULE, enterGetTeacherScheduleConversation);
 
-        this.bot.hears(BotButtons.SUBSCRIBE, async (ctx) =>{
-            await ctx.conversation.enter('subscribeToSchedule');
-        })
+        this.bot.hears(BotButtons.SUBSCRIBE, enterSubscribeToScheduleConversation)
 
-        this.bot.hears(BotButtons.UNSUBSCRIBE, async (ctx) =>{
-            await ctx.conversation.enter('unsubscribeFromSchedule');
-        })
+        this.bot.hears(BotButtons.UNSUBSCRIBE, enterUnsubscribeFromScheduleConversation)
 
-        this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, async (ctx) =>{
-            const { subscriptions, count } = await Database.getUserSubscriptions(ctx.chatId);
-            const text: string = subscriptionsToString(subscriptions);
-            await ctx.reply(text, { reply_markup: subscriptionActionKeyboard(count) });
-        })
+        this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, handleSubscriptionManagement)
 
         this.bot.start().then(() => {
             console.log("Телеграм Бот Запущен!");

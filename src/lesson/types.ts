@@ -16,10 +16,17 @@ export const TimeSlot = {
 
 export type TimeSlot = typeof TimeSlot[keyof typeof TimeSlot];
 
+const ScheduleTarget = {
+    GROUP: "GROUP",
+    TEACHER: "TEACHER"
+} as const;
+
+export type ScheduleTarget = typeof ScheduleTarget[keyof typeof ScheduleTarget];
+
 export const Subgroup = {
-    FIRST: 1,
-    SECOND: 2,
-    BOTH: 3,
+    FIRST: "FIRST",
+    SECOND: "SECOND",
+    BOTH: "BOTH",
 } as const;
 
 export type Subgroup = typeof Subgroup[keyof typeof Subgroup];

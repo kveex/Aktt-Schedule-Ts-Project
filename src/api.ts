@@ -1,5 +1,5 @@
 import {stringToSubgroup} from "./lesson/helper";
-import {Lesson, Schedule, Subgroup} from "./lesson/types";
+import {Lesson, Schedule, ScheduleTarget, Subgroup} from "./lesson/types";
 import {dateToString, parseDate} from "./util/helper";
 
 export class ApiCommunicator {
@@ -41,7 +41,7 @@ export class ApiCommunicator {
     }
 
     public static async getSchedule({ type, name, scheduleDate, subgroup }:
-        { type: "student" | "teacher", name: string, scheduleDate?: Date | null, subgroup?: Subgroup }): Promise<Schedule> {
+        { type: ScheduleTarget, name: string, scheduleDate?: Date | null, subgroup?: Subgroup }): Promise<Schedule> {
         this.api_url.pathname = `/api/schedule/${type}/${name}`;
 
         if (scheduleDate) this.api_url.searchParams.append("date", dateToString(scheduleDate));
