@@ -1,33 +1,37 @@
-import type {Conversation} from "@grammyjs/conversations";
-import {Context, HearsContext, Keyboard} from "grammy";
+import {Keyboard} from "grammy";
 import {Subgroup} from "../../lesson/types";
 import {getNameInDialog, getSubgroupInDialog, setSuggestionsKeyboardInDialog} from "./helper";
-import {Database} from "../database";
 import {mainKeyboard} from "../keyboards";
-import {AkttBotContext, BotButtons, BotConversations} from "../constants";
+import {AkttBotContext, AkttBotConversation, BotButtons} from "../constants";
+import {
+    createScheduleSubscription,
+    getUserSubscriptions,
+    removeUserSubscription
+} from "../database/schedule_subscriptions";
+import {User} from "../database/types";
+import {getUser} from "../database/users";
 
-export async function subscribeToSchedule(con: Conversation, ctx: Context) {
+export async function subscribeToSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
+    const user: User = await con.external(async () => await getUser(ctx.chatId!));
     let subgroup: Subgroup = Subgroup.BOTH;
     await setSuggestionsKeyboardInDialog(
         ctx,
-        "group",
+        con,
+        "GROUP",
+        user,
         "Введите название группы или фамилию и инициалы преподавателя [23-14ИС|Фамилия И.О.]:"
     );
 
-    const { name, type } = await getNameInDialog(ctx, con, null);
+    const { name, target } = await getNameInDialog(ctx, con, user);
 
-    if (type === "group") {
+    if (target === "GROUP") {
         subgroup = await getSubgroupInDialog(ctx, con);
     }
 
     const errorMessage: string | null = await con.external(async () => {
+        const user: User = await getUser(ctx.chatId!);
         try {
-            await Database.createUserSubscription(
-                ctx.chatId!,
-                type === "group" ? name : null,
-                type === "teacher" ? name : null,
-                subgroup
-            );
+            await createScheduleSubscription(user, target, name, subgroup);
             return null;
         } catch (error) {
             return error instanceof Error ? error.message : "Не удалось создать подписку";
@@ -42,10 +46,11 @@ export async function subscribeToSchedule(con: Conversation, ctx: Context) {
     await ctx.reply("Подписка успешно создана!", { reply_markup: mainKeyboard() });
 }
 
-export async function unsubscribeFromSchedule(con: Conversation, ctx: Context) {
+export async function unsubscribeFromSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     let subscriptionsIds: string[] = [];
     const { subscriptions, count } = await con.external(async () => {
-        return await Database.getUserSubscriptions(ctx.chatId!);
+        const user: User = await getUser(ctx.chatId!);
+        return await getUserSubscriptions(user);
     });
 
     for (let i = 0; i < count; i++) {
@@ -58,13 +63,13 @@ export async function unsubscribeFromSchedule(con: Conversation, ctx: Context) {
     }
     subscriptionIdsKeyboard.row().text(BotButtons.CANCEL).resized().persistent();
 
-    await ctx.reply("Укажите номер подписки, которую хотитее убрать:", { reply_markup: subscriptionIdsKeyboard });
+    await ctx.reply("Укажите номер подписки, которую хотите убрать:", { reply_markup: subscriptionIdsKeyboard });
 
     const { message: subscriptionArrayId } = await con.waitForHears(subscriptionsIds);
 
     const errorMessage: string | null = await con.external(async () => {
         try {
-            await Database.removeUserSubscription(subscriptions.at(Number(subscriptionArrayId?.text!) - 1)?.id!);
+            await removeUserSubscription(subscriptions.at(Number(subscriptionArrayId?.text!) - 1)!);
             return null;
         } catch (error) {
             return error instanceof Error ? error.message : "Не удалось удалить подписку";

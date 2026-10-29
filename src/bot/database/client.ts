@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 export const Tables = {
     SCHEDULE_SUBSCRIPTIONS: "schedule_subscriptions",
-    KEYBOARD_SUGGESTIONS: "keyboard_subscriptions",
+    KEYBOARD_SUGGESTIONS: "keyboard_suggestions",
     USERS: "users",
     USERS_ACTIONS: "users_actions"
 } as const;

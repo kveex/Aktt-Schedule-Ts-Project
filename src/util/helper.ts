@@ -1,5 +1,5 @@
-import {ScheduleSubscription} from "../bot/database";
 import {subgroupToString} from "../lesson/helper";
+import {ScheduleSubscription} from "../bot/database/types";
 
 export function parseDate(date: string): Date {
     const [year, month, day]: number[] = date.split('-').map(Number);
@@ -34,11 +34,8 @@ export function subscriptionsToString(subs: ScheduleSubscription[]): string {
 }
 
 function prettifySubscription(sub: ScheduleSubscription): string {
-    if (sub.group_name !== null) {
-        return `Группа: ${sub.group_name} | Подгруппа: ${subgroupToString(sub.sub_group, "text")}\n`;
-    } else if (sub.teacher_name !== null) {
-        return `Преподаватель: ${sub.teacher_name}\n`;
-    } else {
-        return "";
+    switch (sub.target) {
+        case "GROUP": return `Группа: ${sub.value} | Подгруппа: ${subgroupToString(sub.subgroup, "text")}\n`;
+        case "TEACHER": return `Преподаватель: ${sub.value}\n`;
     }
 }

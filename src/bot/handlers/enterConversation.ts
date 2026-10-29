@@ -1,7 +1,5 @@
-import type {Conversation} from "@grammyjs/conversations";
-import {Context, HearsContext} from "grammy";
-import {AkttBotContext, AkttBotConversation, BotConversations} from "../constants";
-import {getDateInDialog} from "../conversations/helper";
+import {HearsContext} from "grammy";
+import {AkttBotContext, BotConversations} from "../constants";
 
 export async function enterGetStudentScheduleConversation(ctx: HearsContext<AkttBotContext>): Promise<void> {
     await ctx.conversation.enter(BotConversations.GET_STUDENT_SCHEDULE)

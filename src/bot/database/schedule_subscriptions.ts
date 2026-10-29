@@ -1,6 +1,6 @@
 import {db, Tables} from "./client";
-import {ScheduleSubscription, ScheduleTarget, User} from "./types";
-import {Subgroup} from "../../lesson/types";
+import {ScheduleSubscription, User} from "./types";
+import {ScheduleTarget, Subgroup} from "../../lesson/types";
 
 const MAX_SUBSCRIPTIONS_PER_USER = 5;
 

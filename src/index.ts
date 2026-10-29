@@ -1,8 +1,6 @@
 import 'dotenv/config'
 import serverStart from './server/server';
-import { ApiCommunicator } from './api';
 import { AkttBot } from './bot/bot';
-import { Database } from './bot/database';
 import {databaseInit} from "./bot/database/client";
 
 if (process.env.API_ADDRESS === undefined || process.env.API_ADDRESS === '') throw new Error("Адрес AKTT API не указан!");
@@ -13,6 +11,4 @@ if (process.env.BOT_TOKEN === undefined || process.env.BOT_TOKEN === '') throw n
 
 serverStart(process.env.SERVER_ADDRESS);
 AkttBot.initialize(process.env.BOT_TOKEN);
-Database.initialize(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 databaseInit(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-ApiCommunicator.initialise(process.env.API_ADDRESS);

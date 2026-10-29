@@ -1,42 +1,19 @@
-import { Conversation } from "@grammyjs/conversations";
-import { Context } from "grammy";
 import {
     cancelKeyboard,
     datePickKeyboard,
     datePickKeyboardButtons,
-    keyboardSuggestionsKeyboard,
+    makeSuggestionsKeyboard,
     subgroupsKeyboard, subgroupsKeyboardLabels
 } from "../keyboards";
 import { parseDate } from "../../util/helper";
-import { ApiCommunicator } from "../../api";
-import { Subgroup } from "../../lesson/types";
+import {Schedule, ScheduleTarget, Subgroup} from "../../lesson/types";
 import {prettifySchedule, stringToSubgroup} from "../../lesson/helper";
-import {BotButtons} from "../constants";
+import {AkttBotContext, AkttBotConversation, BotButtons} from "../constants";
+import {getListAll, getSchedule} from "../../api/schedule";
+import {addKeyboardSuggestion} from "../database/keyboard_suggestions";
+import {User} from "../database/types";
 
-async function getListsInDialog(date: Date | null):
-    Promise<{ groupsList: string[], teachersList: string[], error: string | null }> {
-    let groupsList: string[];
-    let teachersList: string[];
-    let error: string | null = null;
-
-    try {
-        if (!date) {
-            groupsList = await ApiCommunicator.getList("groups");
-            teachersList = await ApiCommunicator.getList("teachers");
-        } else {
-            groupsList = await ApiCommunicator.getList("groups", date);
-            teachersList = await ApiCommunicator.getList("teachers", date);
-        }
-    } catch {
-        groupsList = await ApiCommunicator.getList("groups");
-        teachersList = await ApiCommunicator.getList("teachers");
-        error = "Не удалось найти информацию на указанную дату, попробую получить расписание на ближайшую дату с расписанием";
-    }
-
-    return { groupsList, teachersList, error };
-}
-
-export async function getDateInDialog(con: Conversation, ctx: Context): Promise<Date | null> {
+export async function getDateInDialog(con: AkttBotConversation, ctx: AkttBotContext): Promise<Date | null> {
     await ctx.reply('На какую дату нужно расписание?', { reply_markup: datePickKeyboard() })
 
     const { message: pickedDateOption } = await con.waitForHears(datePickKeyboardButtons);
@@ -66,39 +43,39 @@ export async function getDateInDialog(con: Conversation, ctx: Context): Promise<
 }
 
 export async function getScheduleForDialog(
-    con: Conversation, type: "student" | "teacher", name: string, subgroup: Subgroup,
-    date: Date | null, scheduleFor: string): Promise<string>
+    con: AkttBotConversation, target: ScheduleTarget, value: string, subgroup: Subgroup,
+    date: Date | null): Promise<string>
 {
-    const schedule = await con.external(async () => {
-        return await ApiCommunicator.getSchedule({ type: type, name: name, subgroup: subgroup, scheduleDate: date });
+    const schedule: Schedule = await con.external(async () => {
+        return await getSchedule({value: value, target: target, scheduleDate: date, subgroup: subgroup})
     })
 
-    return prettifySchedule(schedule, scheduleFor);
+    return prettifySchedule(schedule, target, value);
 }
 
 export async function getNameInDialog(
-    ctx: Context, con: Conversation, date: Date | null): Promise<{ name: string, type: "group" | "teacher" }> {
-    const { groupsList, teachersList } = await con.external(async () => {
-        return await getListsInDialog(date);
+    ctx: AkttBotContext, con: AkttBotConversation, user: User): Promise<{ name: string, target: ScheduleTarget }> {
+    const { groups, teachers } = await con.external(async () => {
+        return await getListAll();
     })
 
     while (true) {
         const { message } = await con.waitFor("message:text");
-        const input = message.text;
+        const input: string = message.text;
         
-        const matchedGroup = groupsList.find(groupName => groupName.includes(input.toLocaleLowerCase()));
-        const matchedTeacher = teachersList.find(teacherName => teacherName.includes(input));
+        const matchedGroup = groups.find(groupName => groupName.includes(input.toLocaleLowerCase()));
+        const matchedTeacher = teachers.find(teacherName => teacherName.includes(input));
 
         if (matchedGroup) {
             await con.external(async () => {
-                await Database.addKeyboardSuggestion(ctx.chatId!, "group", matchedGroup.toLocaleUpperCase());
+                await addKeyboardSuggestion(user, "GROUP", matchedGroup.toLocaleUpperCase());
             });
-            return { name: matchedGroup, type: "group" };
+            return { name: matchedGroup, target: "GROUP" };
         } else if (matchedTeacher) {
             await con.external(async () => {
-                await Database.addKeyboardSuggestion(ctx.chatId!, "teacher", matchedTeacher);
+                await addKeyboardSuggestion(user, "TEACHER", matchedTeacher);
             });
-            return { name: matchedTeacher, type: "teacher" };
+            return { name: matchedTeacher, target: "TEACHER" };
         } else {
             await ctx.reply("Указанные группа или преподаватель не найдены! Попробуйте ещё раз:",
                 { reply_markup: cancelKeyboard() }
@@ -107,15 +84,20 @@ export async function getNameInDialog(
     }
 }
 
-export async function setSuggestionsKeyboardInDialog(ctx: Context, suggestionType: "group" | "teacher", text?: string) {
-    const suggestionsKeyboard = await keyboardSuggestionsKeyboard(ctx.chatId!, suggestionType);
+export async function setSuggestionsKeyboardInDialog(ctx: AkttBotContext, con: AkttBotConversation, target: ScheduleTarget, user: User, text?: string) {
+    const suggestionsKeyboard = await con.external(async () => await makeSuggestionsKeyboard(user, target))
 
     let promptText: string;
 
-    if (suggestionType === "group") {
-        promptText = suggestionsKeyboard ? 'Напиши название группы или выбери недавно использованное:' : 'Напиши название группы:';
-    } else {
-        promptText = suggestionsKeyboard ? 'Напиши фамилию и инициалы преподавателя или выбери недавно использованное:' : 'Напиши фамилию и инициалы преподавателя:';
+    switch (target) {
+        case "GROUP": {
+            promptText = suggestionsKeyboard ? 'Напиши название группы или выбери недавно использованное:' : 'Напиши название группы:';
+            break;
+        }
+        case "TEACHER": {
+            promptText = suggestionsKeyboard ? 'Напиши фамилию и инициалы преподавателя или выбери недавно использованное:' : 'Напиши фамилию и инициалы преподавателя:';
+            break;
+        }
     }
 
     if (text) {
@@ -125,7 +107,7 @@ export async function setSuggestionsKeyboardInDialog(ctx: Context, suggestionTyp
     await ctx.reply(promptText, { reply_markup: suggestionsKeyboard || cancelKeyboard() });
 }
 
-export async function getSubgroupInDialog(ctx: Context, con:Conversation): Promise<Subgroup> {
+export async function getSubgroupInDialog(ctx: AkttBotContext, con: AkttBotConversation): Promise<Subgroup> {
     await ctx.reply("Выбери подгруппу, для которой нужно расписание:", { reply_markup: subgroupsKeyboard() });
 
     const { message: subgroupMessage } = await con.waitForHears(subgroupsKeyboardLabels);

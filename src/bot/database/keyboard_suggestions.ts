@@ -1,5 +1,6 @@
 import {db, Tables} from "./client";
-import {KeyboardSuggestion, ScheduleTarget, User} from "./types";
+import {KeyboardSuggestion, User} from "./types";
+import {ScheduleTarget} from "../../lesson/types";
 
 export async function addKeyboardSuggestion(user: User, target: ScheduleTarget, value: string) {
     const client = db();

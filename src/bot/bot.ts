@@ -1,6 +1,5 @@
 import { Bot } from "grammy";
 import { Schedule } from "../lesson/types";
-import { ApiCommunicator } from "../api";
 import { prettifySchedule } from "../lesson/helper";
 import {conversations, createConversation} from "@grammyjs/conversations";
 import {
@@ -22,6 +21,8 @@ import {
 } from "./handlers/enterConversation";
 import {handleSubscriptionManagement} from "./handlers/subscriptionManagment";
 import {ScheduleSubscription} from "./database/types";
+import {getScheduleSubscriptions} from "./database/schedule_subscriptions";
+import {getSchedule} from "../api/schedule";
 
 export class AkttBot {
     private static bot: Bot<AkttBotContext>;
@@ -58,28 +59,22 @@ export class AkttBot {
         .catch((err) => {
             console.error(`Ошибка при запуске телеграм бота: ${err}`);
         });
+
+        this.bot.catch(error => {
+            console.error(`Неизвестная ошибка: ${error.message}`);
+        })
     }
 
     public static async sendScheduleForSubscribed() {
         try {
-            const data: ScheduleSubscription[] = await Database.getScheduleSubscriptions();
+            const data: ScheduleSubscription[] = await getScheduleSubscriptions();
             for (const sub of data) {
-                let schedule: Schedule;
-                let scheduleFor: string = "";
+                const schedule: Schedule = await getSchedule(sub);
 
-                if (sub.group_name !== null) {
-                    scheduleFor += `группы: ${sub.group_name.toLocaleUpperCase()}`;
-                    schedule = await ApiCommunicator.getSchedule({ type: "student", name: sub.group_name, subgroup: sub.sub_group });
-                } else if (sub.teacher_name !== null) {
-                    scheduleFor += `преподавателя: ${sub.teacher_name}`;
-                    schedule = await ApiCommunicator.getSchedule({ type: "teacher", name: sub.teacher_name });
-                }
-
-                const text = prettifySchedule(schedule!, scheduleFor);
-                await this.bot.api.sendMessage(sub.chat_id, text);
+                const text: string = prettifySchedule(schedule!, sub.target, sub.value);
+                await this.bot.api.sendMessage(sub.user.chat_id, text);
             }
-        }
-        catch (err) {
+        } catch (err) {
             console.error(`Error occurred while fetching subscription data: ${err}`);
             throw new Error(`can't get subscription data`);
         }

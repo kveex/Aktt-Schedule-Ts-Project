@@ -1,10 +1,11 @@
 import { Keyboard } from "grammy";
-import { Subgroup } from "../lesson/types";
+import {ScheduleTarget, Subgroup} from "../lesson/types";
 import { subgroupToString } from "../lesson/helper";
-import { Database } from "./database";
 import { BotButtons } from "./constants";
+import {getKeyboardSuggestions} from "./database/keyboard_suggestions";
+import {KeyboardSuggestion, User} from "./database/types";
 
-export function mainKeyboard() {
+export function mainKeyboard(): Keyboard {
     const startKeyboardLabels = [
             BotButtons.STUDENT_SCHEDULE,
             BotButtons.TEACHER_SCHEDULE,
@@ -63,8 +64,8 @@ export function cancelKeyboard() {
     return Keyboard.from([[Keyboard.text(BotButtons.CANCEL)]]).resized().persistent();
 }
 
-export async function keyboardSuggestionsKeyboard(chatId: number, type: "group" | "teacher"): Promise<Keyboard | null> {
-    const suggestions = await Database.getKeyboardSuggestions(chatId, type);
+export async function makeSuggestionsKeyboard(user: User, target: ScheduleTarget): Promise<Keyboard | null> {
+    const suggestions: KeyboardSuggestion[] = await getKeyboardSuggestions(user, target);
 
     if (!suggestions || suggestions.length === 0) return null;
     

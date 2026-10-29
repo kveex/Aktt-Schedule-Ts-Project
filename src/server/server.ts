@@ -1,14 +1,7 @@
-import express, {Request,Response} from 'express'
+import express from 'express'
 import cors from 'cors'
-import { parseDate } from '../util/helper';
-import { ApiCommunicator } from '../api';
 import { AkttBot } from '../bot/bot';
-import {Schedule} from "../lesson/types";
-import {prettifySchedule} from "../lesson/helper";
-import {ScheduleSubscription} from "../bot/database/types";
-import {getScheduleSubscriptions} from "../bot/database/schedule_subscriptions";
-import {AkttBotContext} from "../bot/constants";
-import {Bot} from "grammy";
+import {subscribeToNotifications} from "../api/notification";
 
 const WEBHOOK_PATH = '/api/webhook';
 
@@ -20,17 +13,16 @@ export default async function serverStart(server_url: string) {
     app.use(cors());
     app.use(express.text({ type: '*/*' }));
 
-    app.post(WEBHOOK_PATH, async (req: Request, res: Response)=>{
+    app.post(WEBHOOK_PATH, async ()=>{
         if (webhookInFlight) {
-            res.status(202).send('IGNORED');
+            // res.status(202).send('IGNORED');
             return;
         }
 
         webhookInFlight = true;
-        res.send('RECEIVED');
+        // res.send('RECEIVED');
 
         try {
-            const date: Date = parseDate(req.body)
             await AkttBot.sendScheduleForSubscribed();
         } finally {
             webhookInFlight = false;
@@ -38,7 +30,7 @@ export default async function serverStart(server_url: string) {
     })
 
     app.listen(port, ()=>{
-        ApiCommunicator.subscribeHook(`${server_url}${WEBHOOK_PATH}`);
+        subscribeToNotifications(`${server_url}${WEBHOOK_PATH}`);
         console.log('Сервер запущен на порту', port);
     })
 }
