@@ -16,6 +16,12 @@ export function parseDate(date: string): Date {
     return new Date(Date.UTC(year, month - 1, day));
 }
 
+export function dateToString(date: Date): string {
+    let dateSplit = date.toISOString().split('T');
+    if(!dateSplit[0]) throw new Error('')
+    return dateSplit[0]
+}
+
 export function subscriptionsToString(subs: ScheduleSubscription[]): string {
     let text: string = "Ваши подписки: \n";
 

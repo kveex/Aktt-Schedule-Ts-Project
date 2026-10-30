@@ -5,10 +5,14 @@ const months: string[] = [
             "июля", "августа", "сентября", "октября", "ноября", "декабря"
         ];
 
+function prettifyScheduleDate(date: Date): string {
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+}
+
 export function prettifySchedule(schedule: Schedule, target: ScheduleTarget, value: string): string {
-    let text: string = `Расписание на ${schedule.scheduleDate.getDate()} ${months[schedule.scheduleDate.getMonth()]} ${schedule.scheduleDate.getFullYear()} `;
-    let targetString: string = "";
+    const scheduleDate: string = prettifyScheduleDate(schedule.scheduleDate);
     let finalValue: string = value;
+    let targetString: string = "";
 
     switch (target) {
         case "GROUP": {
@@ -21,6 +25,11 @@ export function prettifySchedule(schedule: Schedule, target: ScheduleTarget, val
             break;
         }
     }
+    if (schedule.lessons.length === 0) {
+        return `${scheduleDate} нет пар для ${targetString} ${finalValue}`
+    }
+
+    let text: string = `Расписание на ${scheduleDate}`;
 
     text += `для ${targetString} ${finalValue}:\n\n`;
 

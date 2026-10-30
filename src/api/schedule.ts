@@ -2,6 +2,7 @@ import {apiClient} from "./client";
 import axios, {HttpStatusCode} from "axios";
 import {Schedule, ScheduleTarget, Subgroup} from "../lesson/types";
 import {login} from "./auth";
+import {dateToString} from "../util/helper";
 
 export async function postPdf(pdfBuffer: ArrayBuffer): Promise<boolean> {
     const formData = new FormData();
@@ -44,11 +45,14 @@ export async function getListAll(): Promise<{groups: string[], teachers: string[
 export async function getSchedule(
     { value, target, scheduleDate, subgroup }:
     { value: string; target: ScheduleTarget, scheduleDate?: Date | null, subgroup?: Subgroup | null}): Promise<Schedule> {
+
+    const date: string = scheduleDate ? dateToString(scheduleDate) : "";
+
     const { data } = await apiClient.get<Schedule>("/schedule", {
         params: {
             value: value,
             target: target,
-            scheduleDate: scheduleDate,
+            scheduleDate: date,
             subgroup: subgroup
         }
     });
