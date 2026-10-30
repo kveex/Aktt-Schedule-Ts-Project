@@ -1,16 +1,26 @@
 import { Keyboard } from "grammy";
 import {ScheduleTarget, Subgroup} from "../lesson/types";
 import { subgroupToString } from "../lesson/helper";
-import { BotButtons } from "./constants";
+import {BotButtons} from "./constants";
 import {getKeyboardSuggestions} from "./database/keyboard_suggestions";
 import {KeyboardSuggestion, User} from "./database/types";
+import {getUser} from "./database/users";
 
-export function mainKeyboard(): Keyboard {
-    const startKeyboardLabels = [
+export async function mainKeyboardById(chatId: number): Promise<Keyboard> {
+    const user: User = await getUser(chatId);
+    return mainKeyboard(user);
+}
+
+export async function mainKeyboard(user: User): Promise<Keyboard> {
+    const startKeyboardLabels: BotButtons[] = [
             BotButtons.STUDENT_SCHEDULE,
             BotButtons.TEACHER_SCHEDULE,
             BotButtons.SUBSCRIPTION_MANAGEMENT
     ];
+
+    if (user.user_actions.includes("SCHEDULE_SENDER")) {
+        startKeyboardLabels.push(BotButtons.SEND_SCHEDULE);
+    }
 
     const buttonRows = startKeyboardLabels
     .map((label) => [Keyboard.text(label)]);
@@ -19,9 +29,9 @@ export function mainKeyboard(): Keyboard {
 }
 
 export const subgroupsKeyboardLabels = [
-        subgroupToString(Subgroup.FIRST, "text"),
-        subgroupToString(Subgroup.SECOND, "text"),
-        subgroupToString(Subgroup.BOTH, "text"),
+        subgroupToString(Subgroup.FIRST),
+        subgroupToString(Subgroup.SECOND),
+        subgroupToString(Subgroup.BOTH),
         BotButtons.CANCEL
     ];
 

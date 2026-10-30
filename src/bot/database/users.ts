@@ -1,25 +1,34 @@
 import {db, Tables} from "./client";
-import {Action, RawUser, User} from "./types";
+import {Action, RawUser, UNIQUE_CONSTRAINT_CODE, User} from "./types";
 
 /**
  * Создаёт пользователя в бд бота
  * @param chatId ID чата пользователя из телеграма
  * @returns Возвращает true если пользователь уже был зарегистрирован
  */
-export async function createUser(chatId: number): Promise<boolean> {
+export async function createUser(chatId: number): Promise<{exists: boolean, user: User}> {
     const client = db();
 
     const { error } = await client
         .from(Tables.USERS)
         .insert({ chat_id: chatId });
     if (error) {
-        if (error.code === "23505") {
-            return true;
+        if (error.code === UNIQUE_CONSTRAINT_CODE) {
+            const user: User = await getUser(chatId);
+            return {
+                exists: true,
+                user: user
+            }
         }
         throw error;
     }
 
-    return false;
+    const user: User = await getUser(chatId);
+
+    return {
+        exists: false,
+        user: user
+    }
 }
 
 export async function getUser(chatId: number): Promise<User> {

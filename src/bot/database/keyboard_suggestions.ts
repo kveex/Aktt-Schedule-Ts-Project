@@ -1,16 +1,25 @@
 import {db, Tables} from "./client";
-import {KeyboardSuggestion, User} from "./types";
+import {KeyboardSuggestion, UNIQUE_CONSTRAINT_CODE, User} from "./types";
 import {ScheduleTarget} from "../../lesson/types";
+
+const MAX_SUGGESTIONS_PER_USER = 3;
 
 export async function addKeyboardSuggestion(user: User, target: ScheduleTarget, value: string) {
     const client = db();
 
-    const { count } = await client
+    /*
+    В базе данных бота должен стоять ключ уникальности для корректной работы!
+    ПРИМЕР SQL:
+        ALTER TABLE keyboard_suggestions
+        ADD CONSTRAINT unique_keyboard_suggestions
+        UNIQUE (user_id, target, value);
+     */
+    const { count: suggestionsCount } = await client
         .from(Tables.KEYBOARD_SUGGESTIONS)
-        .select('*', { count: 'exact', head: true })
+        .select("*", { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-    if (count && count > 3) {
+    if (suggestionsCount && suggestionsCount >= MAX_SUGGESTIONS_PER_USER) {
         const { data: oldest } = await client
             .from(Tables.KEYBOARD_SUGGESTIONS)
             .select('id')
@@ -30,7 +39,7 @@ export async function addKeyboardSuggestion(user: User, target: ScheduleTarget, 
     const { error } = await client.from(Tables.KEYBOARD_SUGGESTIONS).insert({"user_id": user.id, "target": target, "value": value});
 
     if (error) {
-        if (error.code !== '23505') {
+        if (error.code !== UNIQUE_CONSTRAINT_CODE) {
             console.error('Ошибка при добавлении предложения в клавиатуру:', error);
         }
     }

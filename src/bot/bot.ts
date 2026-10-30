@@ -4,7 +4,7 @@ import { prettifySchedule } from "../lesson/helper";
 import {conversations, createConversation} from "@grammyjs/conversations";
 import {
     getStudentSchedule,
-    getTeacherSchedule
+    getTeacherSchedule, sendPdfSchedule
 } from "./conversations/scheduleConversations";
 import {AkttBotContext, BotButtons, BotCommands} from "./constants";
 import {
@@ -15,7 +15,7 @@ import {handleStart} from "./handlers/start";
 import {handleCancelConversation} from "./handlers/cancelConversation";
 import {
     enterGetStudentScheduleConversation,
-    enterGetTeacherScheduleConversation,
+    enterGetTeacherScheduleConversation, enterSendPdfScheduleConversation,
     enterSubscribeToScheduleConversation,
     enterUnsubscribeFromScheduleConversation
 } from "./handlers/enterConversation";
@@ -42,16 +42,19 @@ export class AkttBot {
         this.bot.use(createConversation(getTeacherSchedule));
         this.bot.use(createConversation(subscribeToSchedule));
         this.bot.use(createConversation(unsubscribeFromSchedule));
+        this.bot.use(createConversation(sendPdfSchedule))
 
         this.bot.hears(BotButtons.STUDENT_SCHEDULE, enterGetStudentScheduleConversation);
 
         this.bot.hears(BotButtons.TEACHER_SCHEDULE, enterGetTeacherScheduleConversation);
 
-        this.bot.hears(BotButtons.SUBSCRIBE, enterSubscribeToScheduleConversation)
+        this.bot.hears(BotButtons.SEND_SCHEDULE, enterSendPdfScheduleConversation);
 
-        this.bot.hears(BotButtons.UNSUBSCRIBE, enterUnsubscribeFromScheduleConversation)
+        this.bot.hears(BotButtons.SUBSCRIBE, enterSubscribeToScheduleConversation);
 
-        this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, handleSubscriptionManagement)
+        this.bot.hears(BotButtons.UNSUBSCRIBE, enterUnsubscribeFromScheduleConversation);
+
+        this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, handleSubscriptionManagement);
 
         this.bot.start().then(() => {
             console.log("Телеграм Бот Запущен!");

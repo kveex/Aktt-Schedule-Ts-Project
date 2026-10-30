@@ -1,5 +1,5 @@
 import {db, Tables} from "./client";
-import {ScheduleSubscription, User} from "./types";
+import {ScheduleSubscription, UNIQUE_CONSTRAINT_CODE, User} from "./types";
 import {ScheduleTarget, Subgroup} from "../../lesson/types";
 
 const MAX_SUBSCRIPTIONS_PER_USER = 5;
@@ -41,36 +41,31 @@ export async function removeUserSubscription(subscription: ScheduleSubscription)
 export async function createScheduleSubscription(user: User, target: ScheduleTarget, value: string, subgroup: Subgroup): Promise<void> {
     const client = db();
 
-    const { data, error: subscriptionsError } = await client
+    /*
+    В базе данных бота должен стоять ключ уникальности для корректной работы!
+    ПРИМЕР SQL:
+        ALTER TABLE schedule_subscriptions
+        ADD CONSTRAINT unique_subscription_per_user
+        UNIQUE (user_id, target, value, subgroup);
+     */
+
+    const { count: subscriptionsCount } = await client
         .from(Tables.SCHEDULE_SUBSCRIPTIONS)
-        .select("id, target, value, subgroup")
+        .select("*", { count: "exact", head: true })
         .eq("user_id", user.id);
 
-    if (subscriptionsError) {
-        throw new Error(`Не удалось проверить подписки: ${subscriptionsError.message}`);
-    }
-
-    const subscriptions = data as ScheduleSubscription[];
-
-    if (subscriptions.length >= MAX_SUBSCRIPTIONS_PER_USER) {
-        throw new Error("У вас достигнут лимит подписок! Отпишитесь от неважных расписаний");
-    }
-
-    const hasDuplicate: boolean = subscriptions.some((subscription: ScheduleSubscription) =>
-        subscription.target === target &&
-        subscription.subgroup === subgroup &&
-        subscription.value === value
-    );
-
-    if (hasDuplicate) {
-        throw new Error("Такая подписка уже есть! Сделайте другую подписку");
+    if (subscriptionsCount && subscriptionsCount >= MAX_SUBSCRIPTIONS_PER_USER) {
+        throw new Error("Нельзя добавить больше 5 подписок на расписания!")
     }
 
     const { error } = await client
         .from(Tables.SCHEDULE_SUBSCRIPTIONS)
-        .insert({ "user_id": user.id, "target": target, "subgroup": subgroup });
+        .insert({ "user_id": user.id, "target": target, "value": value, "subgroup": subgroup });
 
     if (error) {
-        throw new Error(`Не удалось создать подписку: ${error.message}`);
+        if (error.code === UNIQUE_CONSTRAINT_CODE) {
+            throw new Error("Такая подписка уже есть!");
+        }
+        throw new Error(`Не удалось создать подписку! || ${error.message} ||`);
     }
 }

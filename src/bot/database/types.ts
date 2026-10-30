@@ -1,5 +1,7 @@
 import {ScheduleTarget, Subgroup} from "../../lesson/types";
 
+export const UNIQUE_CONSTRAINT_CODE = "23505";
+
 const Action = {
     SCHEDULE_SENDER: "SCHEDULE_SENDER",
     MESSENGER: "MESSENGER"

@@ -1,6 +1,7 @@
 import {apiClient} from "./client";
 import axios, {HttpStatusCode} from "axios";
 import {Schedule, ScheduleTarget, Subgroup} from "../lesson/types";
+import {login} from "./auth";
 
 export async function postPdf(pdfBuffer: ArrayBuffer): Promise<boolean> {
     const formData = new FormData();
@@ -13,9 +14,13 @@ export async function postPdf(pdfBuffer: ArrayBuffer): Promise<boolean> {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             if (error.response?.status === HttpStatusCode.Unauthorized) {
-                console.error("По какой-то причине при отправке PDF, бот был не авторизован!")
+                await login(process.env.BOT_API_LOGIN!, process.env.BOT_API_PASSWORD!);
+                return postPdf(pdfBuffer);
+            } else if (error.response?.status === HttpStatusCode.Forbidden) {
+                console.error("У служебного пользователя бота нет прав для отправки расписаний!")
                 return false;
-            } else if (error.response?.status === HttpStatusCode.BadRequest) {
+            }
+            else if (error.response?.status === HttpStatusCode.BadRequest) {
                 console.error(error.message);
                 return false;
             } else {

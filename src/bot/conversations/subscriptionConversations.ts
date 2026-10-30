@@ -34,22 +34,22 @@ export async function subscribeToSchedule(con: AkttBotConversation, ctx: AkttBot
             await createScheduleSubscription(user, target, name, subgroup);
             return null;
         } catch (error) {
-            return error instanceof Error ? error.message : "Не удалось создать подписку";
+            return error instanceof Error ? error.message : "Не удалось создать подписку!";
         }
     });
 
     if (errorMessage) {
-        await ctx.reply(errorMessage, { reply_markup: mainKeyboard() });
+        await ctx.reply(errorMessage, { reply_markup: await mainKeyboard(user) });
         return;
     }
 
-    await ctx.reply("Подписка успешно создана!", { reply_markup: mainKeyboard() });
+    await ctx.reply("Подписка успешно создана!", { reply_markup: await mainKeyboard(user) });
 }
 
 export async function unsubscribeFromSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
+    const user: User = await con.external(async () => await getUser(ctx.chatId!));
     let subscriptionsIds: string[] = [];
     const { subscriptions, count } = await con.external(async () => {
-        const user: User = await getUser(ctx.chatId!);
         return await getUserSubscriptions(user);
     });
 
@@ -77,9 +77,9 @@ export async function unsubscribeFromSchedule(con: AkttBotConversation, ctx: Akt
     })
 
     if (errorMessage) {
-        await ctx.reply(errorMessage, { reply_markup: mainKeyboard() });
+        await ctx.reply(errorMessage, { reply_markup: await mainKeyboard(user) });
         return;
     }
 
-    await ctx.reply("Подписка успешно удалена!", { reply_markup: mainKeyboard() });
+    await ctx.reply("Подписка успешно удалена!", { reply_markup: await mainKeyboard(user) });
 }
