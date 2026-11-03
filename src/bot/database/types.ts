@@ -21,6 +21,14 @@ export interface RawUser {
     users_actions: { action: string }[];
 }
 
+export interface RawScheduleSubscription {
+    id: number;
+    users: { id: number, chat_id: number }[];
+    target: string;
+    value: string;
+    subgroup: string;
+}
+
 export interface KeyboardSuggestion {
     id: number;
     user: User;

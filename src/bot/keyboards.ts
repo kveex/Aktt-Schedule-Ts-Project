@@ -18,12 +18,19 @@ export async function mainKeyboard(user: User): Promise<Keyboard> {
             BotButtons.SUBSCRIPTION_MANAGEMENT
     ];
 
+    const actions = [];
+
     if (user.user_actions.includes("SCHEDULE_SENDER")) {
-        startKeyboardLabels.push(BotButtons.SEND_SCHEDULE);
+        actions.push(Keyboard.text(BotButtons.SEND_SCHEDULE));
+    }
+
+    if (user.user_actions.includes("MESSENGER")) {
+        actions.push(Keyboard.text(BotButtons.SEND_MESSAGE));
     }
 
     const buttonRows = startKeyboardLabels
     .map((label) => [Keyboard.text(label)]);
+    buttonRows.push(actions);
 
     return Keyboard.from(buttonRows).resized().persistent();
 }
@@ -35,7 +42,7 @@ export const subgroupsKeyboardLabels = [
         BotButtons.CANCEL
     ];
 
-export function subgroupsKeyboard() {
+export function subgroupsKeyboard(): Keyboard {
     const buttonRows = subgroupsKeyboardLabels
     .map((label) => [Keyboard.text(label)]);
 
@@ -48,7 +55,7 @@ export const datePickKeyboardButtons = [
     BotButtons.CANCEL
 ]
 
-export function datePickKeyboard() {
+export function datePickKeyboard(): Keyboard {
     const buttonRows = datePickKeyboardButtons
     .map((label) => [Keyboard.text(label)]);
 
@@ -70,7 +77,7 @@ export function subscriptionActionKeyboard(subscriptionCount: number) {
     return Keyboard.from(buttonRows).resized().persistent();
 }
 
-export function cancelKeyboard() {
+export function cancelKeyboard(): Keyboard {
     return Keyboard.from([[Keyboard.text(BotButtons.CANCEL)]]).resized().persistent();
 }
 
@@ -83,4 +90,8 @@ export async function makeSuggestionsKeyboard(user: User, target: ScheduleTarget
     .map((suggestion) => [Keyboard.text(suggestion.value)]);
 
     return Keyboard.from(buttonRows).row().add(Keyboard.text(BotButtons.CANCEL)).resized().persistent();
+}
+
+export function announcementKeyboard(): Keyboard {
+    return Keyboard.from([[Keyboard.text(BotButtons.SEND)], [Keyboard.text(BotButtons.CANCEL)]]).resized().persistent();
 }

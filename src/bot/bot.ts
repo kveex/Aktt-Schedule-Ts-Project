@@ -14,15 +14,18 @@ import {
 import {handleStart} from "./handlers/start";
 import {handleCancelConversation} from "./handlers/cancelConversation";
 import {
+    enterAnnounceConversation,
     enterGetStudentScheduleConversation,
     enterGetTeacherScheduleConversation, enterSendPdfScheduleConversation,
     enterSubscribeToScheduleConversation,
     enterUnsubscribeFromScheduleConversation
 } from "./handlers/enterConversation";
 import {handleSubscriptionManagement} from "./handlers/subscriptionManagment";
-import {ScheduleSubscription} from "./database/types";
+import {ScheduleSubscription, User} from "./database/types";
 import {getScheduleSubscriptions} from "./database/schedule_subscriptions";
 import {getSchedule} from "../api/schedule";
+import {announce} from "./conversations/announcementConversations";
+import {getUsers} from "./database/users";
 
 export class AkttBot {
     private static bot: Bot<AkttBotContext>;
@@ -43,6 +46,7 @@ export class AkttBot {
         this.bot.use(createConversation(subscribeToSchedule));
         this.bot.use(createConversation(unsubscribeFromSchedule));
         this.bot.use(createConversation(sendPdfSchedule))
+        this.bot.use(createConversation(announce));
 
         this.bot.hears(BotButtons.STUDENT_SCHEDULE, enterGetStudentScheduleConversation);
 
@@ -56,6 +60,8 @@ export class AkttBot {
 
         this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, handleSubscriptionManagement);
 
+        this.bot.hears(BotButtons.SEND_MESSAGE, enterAnnounceConversation)
+
         this.bot.start().then(() => {
             console.log("Телеграм Бот Запущен!");
         })
@@ -65,10 +71,11 @@ export class AkttBot {
 
         this.bot.catch(error => {
             console.error(`Неизвестная ошибка: ${error.message}`);
+            this.bot.api.sendMessage(1448471769, JSON.stringify(error));
         })
     }
 
-    public static async sendScheduleForSubscribed() {
+    public static async sendScheduleForSubscribed(): Promise<void> {
         try {
             const data: ScheduleSubscription[] = await getScheduleSubscriptions();
             for (const sub of data) {
@@ -77,9 +84,17 @@ export class AkttBot {
                 const text: string = prettifySchedule(schedule!, sub.target, sub.value);
                 await this.bot.api.sendMessage(sub.user.chat_id, text);
             }
-        } catch (err) {
-            console.error(`Error occurred while fetching subscription data: ${err}`);
-            throw new Error(`can't get subscription data`);
+        } catch (error) {
+            await this.bot.api.sendMessage(1448471769, JSON.stringify(error));
+        }
+    }
+
+    public static async sendAnnouncement(sender: User, text: string): Promise<void> {
+        const users: User[] = await getUsers();
+
+        for (const user of users) {
+            if (user.id === sender.id) continue;
+            await this.bot.api.sendMessage(user.chat_id, text);
         }
     }
 }

@@ -14,6 +14,7 @@ import {AkttBotContext, AkttBotConversation} from "../constants";
 import {User} from "../database/types";
 import {getUser} from "../database/users";
 import {postPdf} from "../../api/schedule";
+import {PdfPostResult} from "../../api/types";
 
 export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     const user: User = await con.external(async () => await getUser(ctx.chatId!));
@@ -38,7 +39,7 @@ export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotCont
         await ctx.reply("Отправлен не PDF файл!");
     }
 
-     const isReceived: boolean = await con.external(async () => {
+     const response: PdfPostResult = await con.external(async () => {
         const file = await ctx.api.getFile(document.file_id);
 
         if (!file.file_path) {
@@ -57,7 +58,26 @@ export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotCont
         return await postPdf(pdfBuffer);
     });
 
-    let text: string = isReceived ? "Новое расписание успешно отправлено!" : "Не удалось отправить новое расписание";
+    let text: string;
+
+    switch (response) {
+        case PdfPostResult.ALREADY_EXISTS: {
+            text = "Это расписание уже добавлено в систему :)";
+            break;
+        }
+        case PdfPostResult.EMPTY_PDF: {
+            text = "Пдф оказался пустым!";
+            break;
+        }
+        case PdfPostResult.SUCCESS: {
+            text = "Расписание успешно отправлено :)";
+            break;
+        }
+        default: {
+            text = "Не удалось отправить расписание!";
+            break;
+        }
+    }
 
     await ctx.reply(text, { reply_markup: await mainKeyboard(user) });
 

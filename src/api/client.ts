@@ -8,7 +8,7 @@ export function setAuthToken(token: string): void {
 
 export const apiClient: AxiosInstance = axios.create({
     baseURL: buildApiBaseUrl(process.env.API_ADDRESS!, 1),
-    timeout: 10000,
+    timeout: 20000,
 });
 
 apiClient.interceptors.request.use((config) => {

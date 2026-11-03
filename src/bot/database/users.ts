@@ -46,6 +46,26 @@ export async function getUser(chatId: number): Promise<User> {
 
     const rawUser = data as RawUser;
 
+    return fromRawUserToUser(rawUser);
+}
+
+export async function getUsers(): Promise<User[]> {
+    const client = db();
+
+    const { data, error } = await client
+        .from(Tables.USERS)
+        .select(`id, chat_id, ${Tables.USERS_ACTIONS} (action)`);
+
+    if (error) {
+        throw error;
+    }
+
+    const rawUsers = data as RawUser[];
+
+    return rawUsers.map(rawUser => fromRawUserToUser(rawUser));
+}
+
+function fromRawUserToUser(rawUser: RawUser): User {
     return {
         id: rawUser.id,
         chat_id: rawUser.chat_id,

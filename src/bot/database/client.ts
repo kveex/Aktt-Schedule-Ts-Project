@@ -4,7 +4,8 @@ export const Tables = {
     SCHEDULE_SUBSCRIPTIONS: "schedule_subscriptions",
     KEYBOARD_SUGGESTIONS: "keyboard_suggestions",
     USERS: "users",
-    USERS_ACTIONS: "users_actions"
+    USERS_ACTIONS: "users_actions",
+    ANNOUNCEMENTS: "announcements"
 } as const;
 
 let client: SupabaseClient | null = null;

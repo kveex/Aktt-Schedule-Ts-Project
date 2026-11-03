@@ -3,13 +3,15 @@ import axios, {HttpStatusCode} from "axios";
 import {Schedule, ScheduleTarget, Subgroup} from "../lesson/types";
 import {login} from "./auth";
 import {dateToString} from "../util/helper";
+import {PdfPostResult} from "./types";
 
-export async function postPdf(pdfBuffer: ArrayBuffer): Promise<boolean> {
+export async function postPdf(pdfBuffer: ArrayBuffer): Promise<PdfPostResult> {
     const formData = new FormData();
 
     const pdf = new Blob([pdfBuffer], { type: 'application/pdf' });
 
     formData.append('file', pdf);
+
     try {
         await apiClient.post("/schedule/pdf", formData);
     } catch (error) {
@@ -19,17 +21,21 @@ export async function postPdf(pdfBuffer: ArrayBuffer): Promise<boolean> {
                 return postPdf(pdfBuffer);
             } else if (error.response?.status === HttpStatusCode.Forbidden) {
                 console.error("У служебного пользователя бота нет прав для отправки расписаний!")
-                return false;
+                return PdfPostResult.FORBIDDEN;
             }
             else if (error.response?.status === HttpStatusCode.BadRequest) {
-                console.error(error.message);
-                return false;
+                const errorDetails: string = error.response?.data.errorDetails;
+                switch (errorDetails) {
+                    case "EMPTY": return PdfPostResult.EMPTY_PDF;
+                    case "ALREADY_EXISTS": return PdfPostResult.ALREADY_EXISTS;
+                    default: return PdfPostResult.UNKNOWN;
+                }
             } else {
                 throw error;
             }
         }
     }
-    return true;
+    return PdfPostResult.SUCCESS;
 }
 
 export async function getListAll(): Promise<{groups: string[], teachers: string[]}> {

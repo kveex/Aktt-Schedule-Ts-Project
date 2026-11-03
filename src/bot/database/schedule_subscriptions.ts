@@ -1,13 +1,34 @@
 import {db, Tables} from "./client";
-import {ScheduleSubscription, UNIQUE_CONSTRAINT_CODE, User} from "./types";
+import {RawScheduleSubscription, ScheduleSubscription, UNIQUE_CONSTRAINT_CODE, User} from "./types";
 import {ScheduleTarget, Subgroup} from "../../lesson/types";
 
 const MAX_SUBSCRIPTIONS_PER_USER = 5;
 
 export async function getScheduleSubscriptions(): Promise<ScheduleSubscription[]> {
     const client = db();
-    const { data } = await client.from(Tables.SCHEDULE_SUBSCRIPTIONS).select();
-    return data as ScheduleSubscription[];
+    const { data, error } = await client
+        .from(Tables.SCHEDULE_SUBSCRIPTIONS)
+        .select(`id, ${Tables.USERS} (id, chat_id), target, value, subgroup`);
+
+    if (error) {
+        throw error;
+    }
+
+    console.log(data)
+
+    const rawSubscriptions = data as RawScheduleSubscription[];
+
+    return rawSubscriptions.map(sub => ({
+        id: sub.id,
+        target: sub.target as ScheduleTarget,
+        value: sub.value,
+        user: {
+            id: sub.users[0]!.id,
+            chat_id: sub.users[0]!.chat_id,
+            user_actions: []
+        },
+        subgroup: sub.subgroup as Subgroup
+    }))
 }
 
 export async function getUserSubscriptions(user: User): Promise<{ subscriptions: ScheduleSubscription[], count: number }> {

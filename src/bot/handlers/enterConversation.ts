@@ -20,3 +20,7 @@ export async function enterUnsubscribeFromScheduleConversation(ctx: HearsContext
 export async function enterSendPdfScheduleConversation(ctx: HearsContext<AkttBotContext>): Promise<void> {
     await ctx.conversation.enter(BotConversations.SEND_SCHEDULE);
 }
+
+export async function enterAnnounceConversation(ctx: HearsContext<AkttBotContext>): Promise<void> {
+    await ctx.conversation.enter(BotConversations.ANNOUNCE);
+}
