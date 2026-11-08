@@ -79,7 +79,7 @@ export class AkttBot {
         try {
             const data: ScheduleSubscription[] = await getScheduleSubscriptions();
             for (const sub of data) {
-                const schedule: Schedule = await getSchedule(sub);
+                const schedule: Schedule | null = await getSchedule(sub);
 
                 const text: string = prettifySchedule(schedule!, sub.target, sub.value);
                 await this.bot.api.sendMessage(sub.user.chat_id, text);

@@ -46,9 +46,11 @@ export async function getScheduleForDialog(
     con: AkttBotConversation, target: ScheduleTarget, value: string, subgroup: Subgroup,
     date: Date | null): Promise<string>
 {
-    const schedule: Schedule = await con.external(async () => {
+    const schedule: Schedule | null = await con.external(async () => {
         return await getSchedule({value: value, target: target, scheduleDate: date, subgroup: subgroup})
     })
+
+    if (!schedule) return "Расписания на указанную дату не было найдено!";
 
     return prettifySchedule(schedule, target, value);
 }

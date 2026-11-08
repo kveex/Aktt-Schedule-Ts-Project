@@ -1,16 +1,19 @@
-import {Lesson, Schedule, ScheduleTarget, Subgroup} from "./types";
+import {Lesson, Schedule, ScheduleDateStatus, ScheduleTarget, Subgroup} from "./types";
 
 const months: string[] = [
             "января", "февраля", "марта", "апреля", "мая", "июня",
             "июля", "августа", "сентября", "октября", "ноября", "декабря"
         ];
 
-function prettifyScheduleDate(date: Date): string {
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+function prettifyScheduleDate(date: Date, scheduleDateStatus: ScheduleDateStatus): string {
+    let text: string = "";
+    if (scheduleDateStatus === ScheduleDateStatus.ASSUMED) text += "предположительно "
+    text += `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+    return text;
 }
 
 export function prettifySchedule(schedule: Schedule, target: ScheduleTarget, value: string): string {
-    const scheduleDate: string = prettifyScheduleDate(schedule.scheduleDate);
+    const scheduleDate: string = prettifyScheduleDate(schedule.scheduleDate, schedule.scheduleDateStatus);
     let finalValue: string = value;
     let targetString: string = "";
 
@@ -29,9 +32,7 @@ export function prettifySchedule(schedule: Schedule, target: ScheduleTarget, val
         return `${scheduleDate} нет пар для ${targetString} ${finalValue}`
     }
 
-    let text: string = `Расписание на ${scheduleDate}`;
-
-    text += `для ${targetString} ${finalValue}:\n\n`;
+    let text: string = `Расписание на ${scheduleDate} для ${targetString} ${finalValue}:\n\n`;
 
     for (const lesson of schedule.lessons) {
         text += prettifyLesson(lesson);

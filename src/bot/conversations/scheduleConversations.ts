@@ -15,6 +15,7 @@ import {User} from "../database/types";
 import {getUser} from "../database/users";
 import {postPdf} from "../../api/schedule";
 import {PdfPostResult} from "../../api/types";
+import {parseDate} from "../../util/helper";
 
 export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     const user: User = await con.external(async () => await getUser(ctx.chatId!));
@@ -27,6 +28,7 @@ export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotCont
     await ctx.reply("Отправьте PDF файл с расписанием:", { reply_markup: cancelKeyboard() });
 
     let document;
+    let manualDate: Date | undefined = undefined;
 
     while (true) {
         const { message } = await con.waitFor(":document");
@@ -39,49 +41,80 @@ export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotCont
         await ctx.reply("Отправлен не PDF файл!");
     }
 
-     const response: PdfPostResult = await con.external(async () => {
-        const file = await ctx.api.getFile(document.file_id);
+    while (true) {
+        let response: PdfPostResult = await con.external(async () => {
+            const file = await ctx.api.getFile(document.file_id);
 
-        if (!file.file_path) {
-            throw new Error("Telegram не вернул путь к файлу");
+            if (!file.file_path) {
+                throw new Error("Telegram не вернул путь к файлу");
+            }
+
+            const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+            const tgResponse = await fetch(fileUrl);
+
+            if (!tgResponse.ok) {
+                throw new Error(`Ошибка скачивания из Telegram! ${tgResponse.statusText}`);
+            }
+
+            const pdfBuffer = await tgResponse.arrayBuffer();
+
+            return await postPdf(pdfBuffer, manualDate);
+        });
+
+        let text: string;
+
+        if (response == PdfPostResult.UNRECOGNISABLE_DATE) {
+            await ctx.reply(
+                "Дата, на которое рассчитано расписание, не получилось выявить. Напиши дату в формате гггг-мм-дд в чат:",
+                { reply_markup: cancelKeyboard() }
+            );
+
+            while (true) {
+                const { message: customDate } = await con.waitFor("message:text");
+                const input: string = customDate.text.toLocaleLowerCase();
+                try {
+                    manualDate = await con.external(() => {
+                        return parseDate(input);
+                    });
+                    break;
+                } catch {
+                    await ctx.reply(
+                        "Дата указана не по формату или оказалась нереалистичной, попробуй снова:",
+                        { reply_markup: cancelKeyboard() }
+                    )
+                }
+            }
+            continue;
         }
 
-        const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-        const tgResponse = await fetch(fileUrl);
-
-        if (!tgResponse.ok) {
-            throw new Error(`Ошибка скачивания из Telegram! ${tgResponse.statusText}`);
+        switch (response) {
+            case PdfPostResult.ALREADY_EXISTS: {
+                text = "Это расписание уже добавлено в систему :)";
+                break;
+            }
+            case PdfPostResult.EMPTY_PDF: {
+                text = "Пдф оказался пустым!";
+                break;
+            }
+            case PdfPostResult.SUCCESS: {
+                text = "Расписание успешно отправлено :)";
+                break;
+            }
+            case PdfPostResult.TIMEOUT: {
+                text = "Не получилось обратиться к API, попробуйте снова позже";
+                break;
+            }
+            default: {
+                text = "Не удалось отправить расписание!";
+                break;
+            }
         }
 
-        const pdfBuffer = await tgResponse.arrayBuffer();
+        await ctx.reply(text, { reply_markup: await mainKeyboard(user) });
 
-        return await postPdf(pdfBuffer);
-    });
-
-    let text: string;
-
-    switch (response) {
-        case PdfPostResult.ALREADY_EXISTS: {
-            text = "Это расписание уже добавлено в систему :)";
-            break;
-        }
-        case PdfPostResult.EMPTY_PDF: {
-            text = "Пдф оказался пустым!";
-            break;
-        }
-        case PdfPostResult.SUCCESS: {
-            text = "Расписание успешно отправлено :)";
-            break;
-        }
-        default: {
-            text = "Не удалось отправить расписание!";
-            break;
-        }
+        await con.halt();
+        break;
     }
-
-    await ctx.reply(text, { reply_markup: await mainKeyboard(user) });
-
-    await con.halt();
 }
 
 export async function getStudentSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {

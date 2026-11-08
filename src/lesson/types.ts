@@ -31,7 +31,15 @@ export interface Lesson {
     lessonType: LessonType;
 }
 
+export const ScheduleDateStatus = {
+    REAL: "REAL",
+    ASSUMED: "ASSUMED"
+}
+
+export type ScheduleDateStatus = typeof ScheduleDateStatus[keyof typeof ScheduleDateStatus];
+
 export interface Schedule {
-    scheduleDate: Date
-    lessons: Lesson[]
+    scheduleDate: Date;
+    scheduleDateStatus: ScheduleDateStatus;
+    lessons: Lesson[];
 }
