@@ -23,7 +23,7 @@ export interface RawUser {
 
 export interface RawScheduleSubscription {
     id: number;
-    users: { id: number, chat_id: number }[];
+    users: { id: number, chat_id: number };
     target: string;
     value: string;
     subgroup: string;

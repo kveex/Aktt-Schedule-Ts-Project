@@ -10,8 +10,6 @@ export const BotButtons = {
     SEND_SCHEDULE: "Загрузить расписание",
     SEND_MESSAGE: "Сделать оповещение",
     SUBSCRIPTION_MANAGEMENT: "Управление подписками",
-    SUBSCRIBE: "Подписка на расписание",
-    UNSUBSCRIBE: "Отписка от расписания",
     NEWEST_SCHEDULE: "Самое свежее расписание",
     CUSTOM_DATE_SCHEDULE: "Указать конкретную дату",
     SEND: "Оправить",
@@ -29,6 +27,7 @@ export const BotConversations = {
     GET_TEACHER_SCHEDULE: "getTeacherSchedule",
     SEND_SCHEDULE: "sendPdfSchedule",
     SUBSCRIBE_TO_SCHEDULE: "subscribeToSchedule",
-    UNSUBSCRIBE_FROM_SCHEDULE: "unsubscribeFromSchedule",
     ANNOUNCE: "announce"
 }
+
+export const MAX_SUBSCRIPTIONS_PER_USER = 5;

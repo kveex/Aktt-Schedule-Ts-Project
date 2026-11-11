@@ -78,11 +78,11 @@ export function subgroupToString(subGroup: Subgroup): string {
 
 export function stringToSubgroup(subgroup: string): Subgroup | undefined {
     switch (subgroup) {
-        case "Первая": return Subgroup.FIRST;
+        case "1 подгр.": return Subgroup.FIRST;
         case "FIRST": return Subgroup.FIRST;
-        case "Вторая": return Subgroup.SECOND;
+        case "2 подгр.": return Subgroup.SECOND;
         case "SECOND": return Subgroup.SECOND;
-        case "Обе": return Subgroup.BOTH;
+        case "Обе подгр.": return Subgroup.BOTH;
         case "BOTH": return Subgroup.BOTH;
         default: return undefined;
     }

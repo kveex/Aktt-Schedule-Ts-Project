@@ -1,10 +1,11 @@
-import { Keyboard } from "grammy";
+import { InlineKeyboard, Keyboard } from "grammy";
 import {ScheduleTarget, Subgroup} from "../lesson/types";
 import { subgroupToString } from "../lesson/helper";
 import {BotButtons} from "./constants";
 import {getKeyboardSuggestions} from "./database/keyboard_suggestions";
-import {KeyboardSuggestion, User} from "./database/types";
+import {KeyboardSuggestion, ScheduleSubscription, User} from "./database/types";
 import {getUser} from "./database/users";
+import {subscriptionLabel} from "../util/helper";
 
 export async function mainKeyboardById(chatId: number): Promise<Keyboard> {
     const user: User = await getUser(chatId);
@@ -62,19 +63,28 @@ export function datePickKeyboard(): Keyboard {
     return Keyboard.from(buttonRows).resized().persistent();
 }
 
-export function subscriptionActionKeyboard(subscriptionCount: number) {
-    const minSubscriptionsAmount: number = 1;
-    const maxSubscriptionsAmount: number = 5;
+export function subscriptionManagementKeyboard(subscriptions: ScheduleSubscription[]): InlineKeyboard {
+    const keyboard = new InlineKeyboard();
 
-    const subscriptionActionKeyboardButtons = [];
-    if (subscriptionCount <= maxSubscriptionsAmount) subscriptionActionKeyboardButtons.push(BotButtons.SUBSCRIBE);
-    if (subscriptionCount >= minSubscriptionsAmount) subscriptionActionKeyboardButtons.push(BotButtons.UNSUBSCRIBE);
-    subscriptionActionKeyboardButtons.push(BotButtons.CANCEL);
+    for (const sub of subscriptions) {
+        keyboard.text(subscriptionLabel(sub), `sub:card:${sub.id}`).row();
+    }
 
-    const buttonRows = subscriptionActionKeyboardButtons
-        .map((label) => [Keyboard.text(label)]);
+    keyboard.text("Добавить подписку", "sub:add");
 
-    return Keyboard.from(buttonRows).resized().persistent();
+    return keyboard;
+}
+
+export function subscriptionCardKeyboard(id: number): InlineKeyboard {
+    return new InlineKeyboard()
+        .text("Удалить", `sub:del:${id}`)
+        .text("Назад", "sub:list");
+}
+
+export function subscriptionConfirmKeyboard(id: number): InlineKeyboard {
+    return new InlineKeyboard()
+        .text("Да, удалить", `sub:confirm:${id}`)
+        .text("Отмена", `sub:card:${id}`);
 }
 
 export function cancelKeyboard(): Keyboard {

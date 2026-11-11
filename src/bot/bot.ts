@@ -7,20 +7,16 @@ import {
     getTeacherSchedule, sendPdfSchedule
 } from "./conversations/scheduleConversations";
 import {AkttBotContext, BotButtons, BotCommands} from "./constants";
-import {
-    subscribeToSchedule,
-    unsubscribeFromSchedule
-} from "./conversations/subscriptionConversations";
+import {subscribeToSchedule} from "./conversations/subscriptionConversations";
 import {handleStart} from "./handlers/start";
 import {handleCancelConversation} from "./handlers/cancelConversation";
 import {
     enterAnnounceConversation,
     enterGetStudentScheduleConversation,
-    enterGetTeacherScheduleConversation, enterSendPdfScheduleConversation,
-    enterSubscribeToScheduleConversation,
-    enterUnsubscribeFromScheduleConversation
+    enterGetTeacherScheduleConversation, enterSendPdfScheduleConversation
 } from "./handlers/enterConversation";
-import {handleSubscriptionManagement} from "./handlers/subscriptionManagment";
+import {handleSubscriptionCallback, handleSubscriptionManagement} from "./handlers/subscriptionManagment";
+import {handleInlineScheduleQuery} from "./handlers/inlineSchedule";
 import {ScheduleSubscription, User} from "./database/types";
 import {getScheduleSubscriptions} from "./database/schedule_subscriptions";
 import {getSchedule} from "../api/schedule";
@@ -44,7 +40,6 @@ export class AkttBot {
         this.bot.use(createConversation(getStudentSchedule));
         this.bot.use(createConversation(getTeacherSchedule));
         this.bot.use(createConversation(subscribeToSchedule));
-        this.bot.use(createConversation(unsubscribeFromSchedule));
         this.bot.use(createConversation(sendPdfSchedule))
         this.bot.use(createConversation(announce));
 
@@ -54,11 +49,11 @@ export class AkttBot {
 
         this.bot.hears(BotButtons.SEND_SCHEDULE, enterSendPdfScheduleConversation);
 
-        this.bot.hears(BotButtons.SUBSCRIBE, enterSubscribeToScheduleConversation);
-
-        this.bot.hears(BotButtons.UNSUBSCRIBE, enterUnsubscribeFromScheduleConversation);
-
         this.bot.hears(BotButtons.SUBSCRIPTION_MANAGEMENT, handleSubscriptionManagement);
+
+        this.bot.callbackQuery(/^sub:/, handleSubscriptionCallback);
+
+        this.bot.on("inline_query", handleInlineScheduleQuery);
 
         this.bot.hears(BotButtons.SEND_MESSAGE, enterAnnounceConversation)
 
@@ -81,7 +76,12 @@ export class AkttBot {
             for (const sub of data) {
                 const schedule: Schedule | null = await getSchedule(sub);
 
-                const text: string = prettifySchedule(schedule!, sub.target, sub.value);
+                if (!schedule) {
+                    console.warn(`Расписание для подписки [${sub.id}] не найдено, пропускаем.`);
+                    continue;
+                }
+
+                const text: string = prettifySchedule(schedule, sub.target, sub.value);
                 await this.bot.api.sendMessage(sub.user.chat_id, text);
             }
         } catch (error) {

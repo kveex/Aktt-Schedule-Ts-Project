@@ -1,8 +1,7 @@
 import {db, Tables} from "./client";
 import {RawScheduleSubscription, ScheduleSubscription, UNIQUE_CONSTRAINT_CODE, User} from "./types";
 import {ScheduleTarget, Subgroup} from "../../lesson/types";
-
-const MAX_SUBSCRIPTIONS_PER_USER = 5;
+import {MAX_SUBSCRIPTIONS_PER_USER} from "../constants";
 
 export async function getScheduleSubscriptions(): Promise<ScheduleSubscription[]> {
     const client = db();
@@ -14,17 +13,15 @@ export async function getScheduleSubscriptions(): Promise<ScheduleSubscription[]
         throw error;
     }
 
-    console.log(data)
-
-    const rawSubscriptions = data as RawScheduleSubscription[];
+    const rawSubscriptions = data as unknown as RawScheduleSubscription[];
 
     return rawSubscriptions.map(sub => ({
         id: sub.id,
         target: sub.target as ScheduleTarget,
         value: sub.value,
         user: {
-            id: sub.users[0]!.id,
-            chat_id: sub.users[0]!.chat_id,
+            id: sub.users.id,
+            chat_id: sub.users.chat_id,
             user_actions: []
         },
         subgroup: sub.subgroup as Subgroup
@@ -37,7 +34,8 @@ export async function getUserSubscriptions(user: User): Promise<{ subscriptions:
     const { data, count: subsCount, error } = await client
         .from(Tables.SCHEDULE_SUBSCRIPTIONS)
         .select("*", { count: "exact" })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .order("id", { ascending: true });
 
     if (data === null) {
         throw new Error(`Не удалось получить список подписок пользователя! Причина: ${error}`);
