@@ -85,6 +85,7 @@ export class AkttBot {
                 await this.bot.api.sendMessage(sub.user.chat_id, text);
             }
         } catch (error) {
+            console.error(error);
             await this.bot.api.sendMessage(1448471769, JSON.stringify(error));
         }
     }

@@ -12,11 +12,12 @@ import {AkttBotContext, AkttBotConversation, BotButtons} from "../constants";
 import {getListAll, getSchedule} from "../../api/schedule";
 import {addKeyboardSuggestion} from "../database/keyboard_suggestions";
 import {User} from "../database/types";
+import {DateInDialog} from "./types";
 
-export async function getDateInDialog(con: AkttBotConversation, ctx: AkttBotContext): Promise<Date | null> {
+export async function getDateInDialog(con: AkttBotConversation, ctx: AkttBotContext): Promise<DateInDialog> {
     await ctx.reply('На какую дату нужно расписание?', { reply_markup: datePickKeyboard() })
 
-    const { message: pickedDateOption } = await con.waitForHears(datePickKeyboardButtons);
+    const { message: pickedDateOption, chatId } = await con.waitForHears(datePickKeyboardButtons);
 
     if (pickedDateOption?.text! === BotButtons.CUSTOM_DATE_SCHEDULE) {
         await ctx.reply(
@@ -29,7 +30,10 @@ export async function getDateInDialog(con: AkttBotConversation, ctx: AkttBotCont
             const input = customDate.text.toLocaleLowerCase();
             try {
                 return await con.external(() => {
-                    return parseDate(input);
+                    return {
+                        date: parseDate(input),
+                        chatId: chatId
+                    };
                 })
             } catch {
                 await ctx.reply(
@@ -39,12 +43,14 @@ export async function getDateInDialog(con: AkttBotConversation, ctx: AkttBotCont
             }
         }
     }
-    return null;
+    return {
+        chatId: chatId
+    };
 }
 
 export async function getScheduleForDialog(
     con: AkttBotConversation, target: ScheduleTarget, value: string, subgroup: Subgroup,
-    date: Date | null): Promise<string>
+    date: Date | undefined): Promise<string>
 {
     const schedule: Schedule | null = await con.external(async () => {
         return await getSchedule({value: value, target: target, scheduleDate: date, subgroup: subgroup})

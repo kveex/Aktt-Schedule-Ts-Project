@@ -13,7 +13,9 @@ import {getUser} from "../database/users";
 
 export async function subscribeToSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     const user: User = await con.external(async () => await getUser(ctx.chatId!));
+
     let subgroup: Subgroup = Subgroup.BOTH;
+
     await setSuggestionsKeyboardInDialog(
         ctx,
         con,
@@ -48,7 +50,9 @@ export async function subscribeToSchedule(con: AkttBotConversation, ctx: AkttBot
 
 export async function unsubscribeFromSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     const user: User = await con.external(async () => await getUser(ctx.chatId!));
+
     let subscriptionsIds: string[] = [];
+
     const { subscriptions, count } = await con.external(async () => {
         return await getUserSubscriptions(user);
     });

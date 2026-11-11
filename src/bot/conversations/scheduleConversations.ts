@@ -16,6 +16,7 @@ import {getUser} from "../database/users";
 import {postPdf} from "../../api/schedule";
 import {PdfPostResult} from "../../api/types";
 import {parseDate} from "../../util/helper";
+import {DateInDialog} from "./types";
 
 export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     const user: User = await con.external(async () => await getUser(ctx.chatId!));
@@ -118,9 +119,9 @@ export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotCont
 }
 
 export async function getStudentSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
-    const user: User = await con.external(async () => await getUser(ctx.chatId!));
+    let tomorrow: DateInDialog = await getDateInDialog(con, ctx);
 
-    let tomorrow: Date | null = await getDateInDialog(con, ctx);
+    const user: User = await con.external(async () => await getUser(tomorrow.chatId));
 
     await setSuggestionsKeyboardInDialog(ctx, con, "GROUP", user);
     
@@ -128,7 +129,7 @@ export async function getStudentSchedule(con: AkttBotConversation, ctx: AkttBotC
 
     const subgroup: Subgroup = await getSubgroupInDialog(ctx, con);
 
-    const schedule: string = await getScheduleForDialog(con, "GROUP", groupName, subgroup, tomorrow);
+    const schedule: string = await getScheduleForDialog(con, "GROUP", groupName, subgroup, tomorrow.date);
 
     await ctx.reply(schedule, { reply_markup: await mainKeyboard(user) });
     
@@ -136,15 +137,15 @@ export async function getStudentSchedule(con: AkttBotConversation, ctx: AkttBotC
 }
 
 export async function getTeacherSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
-    const user: User = await con.external(async () => await getUser(ctx.chatId!));
+    let tomorrow: DateInDialog = await getDateInDialog(con, ctx);
 
-    let tomorrow: Date | null = await getDateInDialog(con, ctx);
+    const user: User = await con.external(async () => await getUser(tomorrow.chatId));
 
     await setSuggestionsKeyboardInDialog(ctx, con, "TEACHER", user);
 
     const { name: teacherName } = await getNameInDialog(ctx, con, user);
 
-    const schedule: string = await getScheduleForDialog(con, "TEACHER", teacherName, Subgroup.BOTH, tomorrow);
+    const schedule: string = await getScheduleForDialog(con, "TEACHER", teacherName, Subgroup.BOTH, tomorrow.date);
 
     await ctx.reply(schedule, { reply_markup: await mainKeyboard(user) });
 

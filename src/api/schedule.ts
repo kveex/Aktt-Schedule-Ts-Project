@@ -1,9 +1,9 @@
 import {apiClient} from "./client";
 import axios, {HttpStatusCode} from "axios";
-import {Schedule, ScheduleTarget, Subgroup} from "../lesson/types";
+import {Schedule} from "../lesson/types";
 import {login} from "./auth";
 import {dateToString} from "../util/helper";
-import {PdfPostResult} from "./types";
+import {PdfPostResult, ScheduleRequest, TargetsLists} from "./types";
 
 export async function postPdf(pdfBuffer: ArrayBuffer, manualDate?: Date | undefined): Promise<PdfPostResult> {
     const formData = new FormData();
@@ -44,7 +44,7 @@ export async function postPdf(pdfBuffer: ArrayBuffer, manualDate?: Date | undefi
     return PdfPostResult.SUCCESS;
 }
 
-export async function getListAll(): Promise<{groups: string[], teachers: string[]}> {
+export async function getListAll(): Promise<TargetsLists> {
     const { data: groups } = await apiClient.get<string[]>("/schedule/groups");
     const { data: teachers } = await apiClient.get<string[]>("/schedule/teachers");
 
@@ -54,18 +54,16 @@ export async function getListAll(): Promise<{groups: string[], teachers: string[
     }
 }
 
-export async function getSchedule(
-    { value, target, scheduleDate, subgroup }:
-    { value: string; target: ScheduleTarget, scheduleDate?: Date | null, subgroup?: Subgroup | null}): Promise<Schedule | null> {
+export async function getSchedule(request: ScheduleRequest): Promise<Schedule | null> {
 
-    const date: string = scheduleDate ? dateToString(scheduleDate) : "";
+    const date: string = request.scheduleDate ? dateToString(request.scheduleDate) : "";
     try {
         const {data} = await apiClient.get<Schedule>("/schedule", {
             params: {
-                value: value,
-                target: target,
+                value: request.value,
+                target: request.target,
                 scheduleDate: date,
-                subgroup: subgroup
+                subgroup: request.subgroup
             }
         });
 

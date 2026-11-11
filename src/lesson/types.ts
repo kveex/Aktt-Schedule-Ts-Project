@@ -21,6 +21,27 @@ export const LessonType = {
 
 export type LessonType = typeof LessonType[keyof typeof LessonType];
 
+export const LessonTimeType = {
+    CUSTOM: "CUSTOM",
+    ZEROTH: "ZEROTH",
+    FIRST: "FIRST",
+    FIRST_SHORT: "FIRST_SHORT",
+    SECOND: "SECOND",
+    SECOND_FULL: "SECOND_FULL",
+    SECOND_SHORT: "SECOND_SHORT",
+    THIRD: "THIRD",
+    THIRD_SHORT: "THIRD_SHORT",
+    FOURTH: "FOURTH",
+    FOURTH_SHORT: "FOURTH_SHORT",
+    FIFTH: "FIFTH",
+    FIFTH_SHORT: "FIFTH_SHORT",
+    PRODUCTION_PRACTICE: "PRODUCTION_PRACTICE",
+    LEARNING_PRACTICE: "LEARNING_PRACTICE",
+    PRE_DIPLOMA_PRACTICE: "PRE_DIPLOMA_PRACTICE"
+}
+
+export type LessonTimeType = typeof LessonTimeType[keyof typeof LessonTimeType];
+
 export interface Lesson {
     groupName: string;
     teacherName: string;
@@ -28,6 +49,7 @@ export interface Lesson {
     subjectName: string;
     classroom: string;
     subgroup: Subgroup;
+    lessonTimeType: LessonTimeType;
     lessonType: LessonType;
 }
 

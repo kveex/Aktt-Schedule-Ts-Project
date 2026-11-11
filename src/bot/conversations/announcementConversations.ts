@@ -6,15 +6,15 @@ import {getUser} from "../database/users";
 import {AkttBot} from "../bot";
 
 export async function announce(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
-    await ctx.reply("Введите текст, который хотите отправить для оповещения:", { reply_markup: cancelKeyboard() });
-    const { message, chatId } = await con.waitFor(":text");
-
-    const user: User = await con.external(async () => await getUser(chatId));
-
+    const user: User = await con.external(async () => await getUser(ctx.chatId!));
     if (!user.user_actions.includes("MESSENGER")) {
         await ctx.reply("У вас недостаточно прав для данного действия!", { reply_markup: await mainKeyboard(user) });
         await con.halt();
     }
+
+    await ctx.reply("Введите текст, который хотите отправить для оповещения:", { reply_markup: cancelKeyboard() });
+
+    const { message } = await con.waitFor([":text", ":file"]);
 
     const text: string = message?.text!;
 

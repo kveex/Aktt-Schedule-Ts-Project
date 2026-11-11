@@ -1,4 +1,4 @@
-import {Lesson, Schedule, ScheduleDateStatus, ScheduleTarget, Subgroup} from "./types";
+import {Lesson, LessonTimeType, Schedule, ScheduleDateStatus, ScheduleTarget, Subgroup} from "./types";
 
 const months: string[] = [
             "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -14,58 +14,65 @@ function prettifyScheduleDate(date: Date, scheduleDateStatus: ScheduleDateStatus
 
 export function prettifySchedule(schedule: Schedule, target: ScheduleTarget, value: string): string {
     const scheduleDate: string = prettifyScheduleDate(schedule.scheduleDate, schedule.scheduleDateStatus);
-    let finalValue: string = value;
-    let targetString: string = "";
+
+    let text: string = `Расписание на ${scheduleDate}\n`;
 
     switch (target) {
         case "GROUP": {
-            targetString = "группы";
-            finalValue = value.toLocaleUpperCase();
+            text += `Группа ${value.toUpperCase()}`;
             break;
         }
         case "TEACHER": {
-            targetString = "преподавателя"
+            text += `Преподаватель ${value}`;
             break;
         }
     }
-    if (schedule.lessons.length === 0) {
-        return `${scheduleDate} нет пар для ${targetString} ${finalValue}`
-    }
 
-    let text: string = `Расписание на ${scheduleDate} для ${targetString} ${finalValue}:\n\n`;
+    let lastTimeType: LessonTimeType | undefined;
 
     for (const lesson of schedule.lessons) {
-        text += prettifyLesson(lesson);
+        const { timeType, text: lessonText } = prettifyLesson(lesson, target, lastTimeType);
+        lastTimeType = timeType;
+        text += `${lessonText}`;
     }
-    
+
     return text;
 }
 
-function prettifyLesson(lesson: Lesson): string {
-    let text: string = "";
-    
+function prettifyLesson(lesson: Lesson, target: ScheduleTarget, lastTimeType: LessonTimeType | undefined): {timeType: LessonTimeType, text: string} {
+    let text: string = "\n";
 
-    const strSubGroup: string = subgroupToString(lesson.subgroup);
-
-    text += `- Время: ${lesson.lessonTime}\n`
-    if (lesson.lessonType != "PRACTICE") text += `- Предмет: ${lesson.subjectName}\n`
-    text += `- Группа: ${lesson.groupName.toUpperCase()}\n`
-    if (lesson.teacherName) text += `- Преподаватель: ${lesson.teacherName}\n`
-    text += `- Кабинет: ${lesson.classroom}\n`
-    
-    if (lesson.subgroup !== Subgroup.BOTH) {
-        text += `- Подгруппа: ${strSubGroup}\n`
+    if (lesson.lessonTimeType !== lastTimeType || lastTimeType === undefined) {
+        text += `\n${lesson.lessonTime}\n`;
     }
-    text += "──────────────────────\n"
 
-    return text;
+    text += `${lesson.subjectName} каб. ${lesson.classroom} - `;
+
+    switch (target) {
+        case "GROUP": {
+            text += `${lesson.teacherName}`;
+            break;
+        }
+        case "TEACHER": {
+            text += `${lesson.groupName.toUpperCase()}`;
+        }
+    }
+
+    if (target === "GROUP" && lesson.subgroup !== Subgroup.BOTH) {
+        text += ` (${subgroupToString(lesson.subgroup)})`;
+    }
+
+    return {
+        timeType: lesson.lessonTimeType,
+        text: text
+    };
 }
 
 export function subgroupToString(subGroup: Subgroup): string {
     switch (subGroup) {
-        case Subgroup.FIRST: return "Первая";
-        case Subgroup.SECOND: return "Вторая";
-        case Subgroup.BOTH: return "Обе";
+        case Subgroup.FIRST: return "1 подгр.";
+        case Subgroup.SECOND: return "2 подгр.";
+        case Subgroup.BOTH: return "Обе подгр.";
     }
 }
 

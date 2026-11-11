@@ -1,3 +1,5 @@
+import {ScheduleTarget, Subgroup} from "../lesson/types";
+
 export const PdfPostResult = {
     SUCCESS: "SUCCESS",
     FORBIDDEN: "FORBIDDEN",
@@ -21,4 +23,16 @@ export interface ScheduleUpdate {
     id: string;
     event: ScheduleEvent;
     timestamp: string;
+}
+
+export interface TargetsLists {
+    groups: string[];
+    teachers: string[];
+}
+
+export interface ScheduleRequest {
+    value: string;
+    target: ScheduleTarget;
+    scheduleDate?: Date | undefined;
+    subgroup?: Subgroup;
 }
