@@ -1,0 +1,14 @@
+name = "aktt-telegram-relay"
+main = "cloudflare-worker.js"
+compatibility_date = "2025-01-01"
+
+# Секретный префикс пути НЕ хранится здесь.
+# Задайте его как секрет воркера (один раз, после первого деплоя):
+#
+#   npx wrangler secret put SECRET_PATH
+#
+# Придумайте длинную случайную строку, например:
+#   node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+#
+# Затем укажите в .env бота:
+#   BOT_API_ROOT=https://aktt-telegram-relay.<ваш-сабдомен>.workers.dev/<SECRET_PATH>

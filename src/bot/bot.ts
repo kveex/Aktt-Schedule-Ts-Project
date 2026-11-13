@@ -22,12 +22,15 @@ import {getScheduleSubscriptions} from "./database/schedule_subscriptions";
 import {getSchedule} from "../api/schedule";
 import {announce} from "./conversations/announcementConversations";
 import {getUsers} from "./database/users";
+import {telegramClientOptions} from "./telegram";
 
 export class AkttBot {
     private static bot: Bot<AkttBotContext>;
 
     private constructor(token: string) {
-        AkttBot.bot = new Bot<AkttBotContext>(token);
+        AkttBot.bot = new Bot<AkttBotContext>(token, {
+            client: telegramClientOptions()
+        });
     }
 
     public static initialize(token: string) {

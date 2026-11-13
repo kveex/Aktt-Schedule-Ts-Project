@@ -17,6 +17,7 @@ import {postPdf} from "../../api/schedule";
 import {PdfPostResult} from "../../api/types";
 import {parseDate} from "../../util/helper";
 import {DateInDialog} from "./types";
+import {telegramFetch, telegramFileUrl} from "../telegram";
 
 export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotContext): Promise<void> {
     const user: User = await con.external(async () => await getUser(ctx.chatId!));
@@ -50,8 +51,8 @@ export async function sendPdfSchedule(con: AkttBotConversation, ctx: AkttBotCont
                 throw new Error("Telegram не вернул путь к файлу");
             }
 
-            const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-            const tgResponse = await fetch(fileUrl);
+            const fileUrl = telegramFileUrl(file.file_path);
+            const tgResponse = await telegramFetch()(fileUrl);
 
             if (!tgResponse.ok) {
                 throw new Error(`Ошибка скачивания из Telegram! ${tgResponse.statusText}`);
